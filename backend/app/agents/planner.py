@@ -45,7 +45,7 @@ def _parse_budget(text: str) -> int | None:
 
 _SWAP_TARGETS = (
     "그릭요거트", "요거트", "감동란", "계란", "두부바", "두부", "닭가슴살",
-    "도시락", "샐러드", "아몬드", "프로틴", "두유", "콜라", "오트밀",
+    "도시락", "샐러드", "아몬드 브리즈", "아몬드", "프로틴", "유청 단백질", "두유", "콜라", "오트밀",
     "현미", "곤약밥", "참치", "바나나", "삼각김밥", "탄산수", "아메리카노",
     "음료", "서브", "메인",
 )
@@ -213,7 +213,7 @@ def analyze_node(state: AgentState) -> dict[str, Any]:
 
     prev_ctx = load_session_context(session_id)
     saved_profile = load_profile(session_id) or {}
-    profile = {**saved_profile, **prev_ctx.get("profile", {}), **(state.get("profile") or {})}
+    profile = {**prev_ctx.get("profile", {}), **saved_profile, **(state.get("profile") or {})}
 
     rule_data = _extract_rule_based(user_msg)
     refined, llm_called, reason = _try_llm_intent_refine(user_msg, rule_data)
@@ -227,10 +227,9 @@ def analyze_node(state: AgentState) -> dict[str, Any]:
     )
     explicit_mode = refined.get("mode")
     mode = explicit_mode or base_mode
-    mode_switched = bool(
-        explicit_mode and prev_mode and explicit_mode != base_mode and explicit_mode != "item_swap"
-    )
-    next_base_mode = mode if mode in {"online_bulk", "cvs_instant", "cheating_recovery"} else base_mode
+    _meal_modes = {"online_bulk", "cvs_instant", "cheating_recovery"}
+    mode_switched = bool(explicit_mode in _meal_modes and prev_mode and explicit_mode != base_mode)
+    next_base_mode = mode if mode in _meal_modes else base_mode
 
     profile = {**profile, **refined.get("profile_updates", {})}
     if mode_switched:
@@ -257,15 +256,25 @@ def analyze_node(state: AgentState) -> dict[str, Any]:
     elif not mode_switched:
         preferences.pop("include_coffee", None)
 
-    if profile.get("lactose_free"):
-        constraints["lactose_free"] = True
-    if profile.get("low_sugar"):
-        constraints["low_sugar"] = True
-        constraints["max_sugar_g"] = 10.0
+    if "lactose_free" in profile:
+        if profile["lactose_free"]:
+            constraints["lactose_free"] = True
+        elif "lactose_free" not in refined.get("constraints", {}):
+            constraints.pop("lactose_free", None)
+    if "low_sugar" in profile:
+        if profile["low_sugar"]:
+            constraints["low_sugar"] = True
+            constraints["max_sugar_g"] = 10.0
+        elif "low_sugar" not in refined.get("constraints", {}):
+            constraints.pop("low_sugar", None)
+            constraints.pop("max_sugar_g", None)
     if profile.get("no_caffeine_after_18") and base_conditions.get("meal_time", "00:00") >= "18:00":
         constraints.setdefault("no_caffeine", True)
     if profile.get("budget_krw") is not None and "budget_krw" not in refined.get("constraints", {}):
-        constraints.setdefault("budget_krw", profile["budget_krw"])
+        if saved_profile.get("budget_krw") != prev_ctx.get("profile", {}).get("budget_krw"):
+            constraints["budget_krw"] = profile["budget_krw"]
+        else:
+            constraints.setdefault("budget_krw", profile["budget_krw"])
     if profile.get("disliked_ingredients"):
         merged_dislikes = list(dict.fromkeys([*preferences.get("disliked_ingredients", []), *profile["disliked_ingredients"]]))
         preferences["disliked_ingredients"] = merged_dislikes
@@ -373,6 +382,7 @@ def plan_node(state: AgentState) -> dict[str, Any]:
 
     event_bus.publish(AgentEvent(session_id, run_id, "node_enter", "PlannerAgent", "planner_plan", {"is_replan": is_replan, "replan_count": replan_count}))
 
+    reason_text = ""
     if is_replan:
         replan_count += 1
         reasons = validation.get("stage1_errors", []) + validation.get("stage2_errors", []) + [e.get("reason", "") for e in escalations]
@@ -408,13 +418,30 @@ def plan_node(state: AgentState) -> dict[str, Any]:
     else:
         use_mock = get_settings().use_mock
         query_mode = state.get("base_mode", mode) if mode == "item_swap" else mode
+        replan_tag = (
+            "sodium" if ("HIGH_SODIUM" in reason_text or "나트륨" in reason_text)
+            else "budget" if ("BUDGET_EXCEEDED" in reason_text or "예산 초과" in reason_text)
+            else "default"
+        )
+        if replan_count >= 1:
+            extra_nut = (
+                {"sodium": ["오트밀", "아몬드", "두유", "요거트"], "budget": ["두부", "달걀", "두유", "오트밀"], "default": ["두부", "아몬드"]}
+                if query_mode == "online_bulk"
+                else {"sodium": ["요거트", "아몬드", "두유"], "budget": ["달걀", "두부", "두유", "아몬드"], "default": ["달걀", "요거트", "아몬드", "샐러드"]}
+            )[replan_tag]
+            extra_shop = (
+                (["오트밀", "아몬드"] if replan_tag != "default" else [])
+                if query_mode == "online_bulk"
+                else {"sodium": ["요거트", "아몬드", "두유"], "budget": ["계란", "두부", "아몬드"], "default": ["요거트", "아몬드", "우유"]}[replan_tag]
+            )
+        else:
+            extra_nut, extra_shop = [], []
+
         # 실시간 API AND 검색 호환을 위해 품목별 짧은 검색어 목록으로 분할 구성
         if prefs.get("explicit_query"):
             nut_queries = [prefs["explicit_query"]]
         elif query_mode == "online_bulk":
-            nut_queries = ["삶은계란", "찌개두부", "참치", "현미", "두유"] if not use_mock else ["닭가슴살", "현미", "오트밀", "프로틴", "참치", "달걀"]
-            if replan_count >= 1:
-                nut_queries.extend(["두부", "아몬드"])
+            nut_queries = (["삶은계란", "찌개두부", "참치", "현미", "두유"] if not use_mock else ["닭가슴살", "현미", "오트밀", "프로틴", "참치", "달걀"]) + extra_nut
         else:
             nut_queries = (
                 ["삶은계란", "찌개두부", "참치", "두유"]
@@ -423,19 +450,17 @@ def plan_node(state: AgentState) -> dict[str, Any]:
             )
             if prefs.get("include_coffee"):
                 nut_queries.append("아메리카노")
-            if replan_count >= 1:
-                nut_queries.extend(["달걀", "요거트", "아몬드", "샐러드"])
+            nut_queries.extend(extra_nut)
 
         if prefs.get("explicit_shop_query"):
             shop_queries = [prefs["explicit_shop_query"]]
         elif query_mode == "online_bulk":
-            shop_queries = ["참치", "현미", "계란", "두유"] + (["닭가슴살", "오트밀", "프로틴"] if use_mock else [])
+            shop_queries = ["참치", "현미", "계란", "두유"] + (["닭가슴살", "오트밀", "프로틴"] if use_mock else []) + extra_shop
         else:
             shop_queries = ["계란", "두부", "두유", "참치"] + (["닭가슴살", "탄산수"] if use_mock else [])
             if prefs.get("include_coffee"):
                 shop_queries.append("아메리카노")
-            if replan_count >= 1:
-                shop_queries.extend(["요거트", "아몬드", "우유"])
+            shop_queries.extend(extra_shop)
 
         for idx, nq in enumerate(dict.fromkeys(nut_queries)):
             task_list.append(

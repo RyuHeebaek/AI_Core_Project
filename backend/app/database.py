@@ -24,7 +24,6 @@ def get_conn(db_path: str | None = None, immediate: bool = False) -> Iterator[sq
     Path(target).parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(target, timeout=10.0, check_same_thread=False, isolation_level=None)
     conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL;")
     conn.execute("PRAGMA busy_timeout=10000;")
     try:
         if immediate:
@@ -43,10 +42,11 @@ def get_conn(db_path: str | None = None, immediate: bool = False) -> Iterator[sq
 
 
 def init_db(db_path: str | None = None) -> None:
-    """필수 테이블이 없으면 생성한다."""
+    """필수 테이블이 없으면 생성하고 WAL 모드를 설정한다."""
     with get_conn(db_path) as conn:
         conn.executescript(
             """
+            PRAGMA journal_mode=WAL;
             CREATE TABLE IF NOT EXISTS profiles (
                 session_id TEXT PRIMARY KEY,
                 profile_json TEXT NOT NULL,

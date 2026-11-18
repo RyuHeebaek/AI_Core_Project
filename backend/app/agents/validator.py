@@ -29,7 +29,8 @@ def _stage1_deterministic(
         return False, ["추천 가능한 식단 품목 조합이 없습니다."], {}
 
     recalculated = summarize_combo(items)
-    price_override = combo.get("total_price_krw") if mode == "online_bulk" else None
+    is_bulk = mode == "online_bulk" or (combo.get("shopping_summary") or {}).get("type") == "online_bulk"
+    price_override = combo.get("total_price_krw") if is_bulk else None
     errors = check_meal_constraints(
         items,
         recalculated,

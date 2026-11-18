@@ -33,7 +33,6 @@ class AgentState(TypedDict, total=False):
     missing_fields: list[str]
 
     task_list: list[dict[str, Any]]
-    worker_results: dict[str, Any]
     worker_escalations: list[dict[str, Any]]
 
     # F3009: 재계획 시 이미 조회한 Tool 결과 캐시 재사용
@@ -43,7 +42,6 @@ class AgentState(TypedDict, total=False):
 
     candidate_combo: dict[str, Any]
     validation_result: dict[str, Any]
-    anomaly_report: dict[str, Any]
 
     replan_count: int
     max_replan: int

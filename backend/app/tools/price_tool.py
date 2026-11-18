@@ -230,6 +230,8 @@ def _recent_inspect_days(weeks: int = 4) -> list[str]:
 _CATALOG_TTL_SEC = 6 * 3600
 _PRICE_CACHE_TTL_SEC = 3600
 _CACHE_LOCK = threading.Lock()
+_GOODS_FETCH_LOCK = threading.Lock()
+_STORE_FETCH_LOCK = threading.Lock()
 _GOODS_CATALOG_CACHE: dict[tuple[str, str], tuple[float, list[tuple[str, str]]]] = {}
 _STORE_CATALOG_CACHE: dict[tuple[str, str], tuple[float, dict[str, tuple[str, str]]]] = {}
 _ITEM_PRICE_CACHE: dict[tuple[str, str], tuple[float, list[dict[str, str]]]] = {}
@@ -393,64 +395,72 @@ def _search_open_food_facts(query: str, limit: int = 5) -> list[dict[str, Any]]:
 
 def _load_consumer_goods(base: str, api_key: str) -> list[tuple[str, str]]:
     ckey = (base, api_key)
-    now = time.monotonic()
     with _CACHE_LOCK:
         cached = _GOODS_CATALOG_CACHE.get(ckey)
-        if cached and (now - cached[0]) < _CATALOG_TTL_SEC:
+        if cached and (time.monotonic() - cached[0]) < _CATALOG_TTL_SEC:
             return cached[1]
 
-    resp = http_get(f"{base}/getProductInfoSvc.do", params={"serviceKey": api_key}, timeout=8)
-    resp.raise_for_status()
-    root = _decode_xml_bytes(resp.content)
-    goods: list[tuple[str, str]] = []
-    for item in root.iter():
-        if item.tag.lower().endswith(("item", "productinfovo")):
-            gid = (item.findtext("goodId") or "").strip()
-            gname = (item.findtext("goodName") or "").strip()
-            cnt = (item.findtext("goodTotalCnt") or "").strip()
-            unit = (item.findtext("goodUnitDivCode") or item.findtext("goodTotalDivCode") or "").strip()
-            has_pack = bool(_PACK_RE.search(gname))
-            has_weight = bool(_WEIGHT_RE.search(gname))
-            if cnt and ((not has_weight and unit.lower() in {"g", "kg", "ml", "l"}) or (not has_pack and not has_weight)):
-                full_name = f"{gname} {cnt}{unit}".strip()
-            else:
-                full_name = gname
-            if gid and gname:
-                goods.append((gid, full_name))
-    if not goods:
-        err_msg = (root.findtext(".//returnAuthMsg") or root.findtext(".//resultMsg") or "빈 상품 목록").strip()
-        raise ValueError(f"소비자원 상품 카탈로그 응답 비정상: {err_msg}")
-    with _CACHE_LOCK:
-        _GOODS_CATALOG_CACHE[ckey] = (time.monotonic(), goods)
-    return goods
+    with _GOODS_FETCH_LOCK:
+        with _CACHE_LOCK:
+            cached = _GOODS_CATALOG_CACHE.get(ckey)
+            if cached and (time.monotonic() - cached[0]) < _CATALOG_TTL_SEC:
+                return cached[1]
+        resp = http_get(f"{base}/getProductInfoSvc.do", params={"serviceKey": api_key}, timeout=8)
+        resp.raise_for_status()
+        root = _decode_xml_bytes(resp.content)
+        goods: list[tuple[str, str]] = []
+        for item in root.iter():
+            if item.tag.lower().endswith(("item", "productinfovo")):
+                gid = (item.findtext("goodId") or "").strip()
+                gname = (item.findtext("goodName") or "").strip()
+                cnt = (item.findtext("goodTotalCnt") or "").strip()
+                unit = (item.findtext("goodUnitDivCode") or item.findtext("goodTotalDivCode") or "").strip()
+                has_pack = bool(_PACK_RE.search(gname))
+                has_weight = bool(_WEIGHT_RE.search(gname))
+                if cnt and ((not has_weight and unit.lower() in {"g", "kg", "ml", "l"}) or (not has_pack and not has_weight)):
+                    full_name = f"{gname} {cnt}{unit}".strip()
+                else:
+                    full_name = gname
+                if gid and gname:
+                    goods.append((gid, full_name))
+        if not goods:
+            err_msg = (root.findtext(".//returnAuthMsg") or root.findtext(".//resultMsg") or "빈 상품 목록").strip()
+            raise ValueError(f"소비자원 상품 카탈로그 응답 비정상: {err_msg}")
+        with _CACHE_LOCK:
+            _GOODS_CATALOG_CACHE[ckey] = (time.monotonic(), goods)
+        return goods
 
 
 def _load_consumer_stores(base: str, api_key: str) -> dict[str, tuple[str, str]]:
     ckey = (base, api_key)
-    now = time.monotonic()
     with _CACHE_LOCK:
         cached = _STORE_CATALOG_CACHE.get(ckey)
-        if cached and (now - cached[0]) < _CATALOG_TTL_SEC:
+        if cached and (time.monotonic() - cached[0]) < _CATALOG_TTL_SEC:
             return cached[1]
-    try:
-        resp = http_get(f"{base}/getStoreInfoSvc.do", params={"serviceKey": api_key}, timeout=8)
-        resp.raise_for_status()
-        root = _decode_xml_bytes(resp.content)
-        stores: dict[str, tuple[str, str]] = {}
-        for vo in root.iter():
-            if vo.tag.lower().endswith(("item", "entpinfovo")):
-                eid = (vo.findtext("entpId") or "").strip()
-                ename = (vo.findtext("entpName") or "").strip()
-                etype = _ENTP_TYPE_MAP.get((vo.findtext("entpTypeCode") or "").strip().upper(), "other")
-                if eid:
-                    stores[eid] = (ename or f"매장-{eid}", etype)
-        if not stores:
-            return {}
+    with _STORE_FETCH_LOCK:
         with _CACHE_LOCK:
-            _STORE_CATALOG_CACHE[ckey] = (time.monotonic(), stores)
-        return stores
-    except Exception:
-        return {}
+            cached = _STORE_CATALOG_CACHE.get(ckey)
+            if cached and (time.monotonic() - cached[0]) < _CATALOG_TTL_SEC:
+                return cached[1]
+        try:
+            resp = http_get(f"{base}/getStoreInfoSvc.do", params={"serviceKey": api_key}, timeout=8)
+            resp.raise_for_status()
+            root = _decode_xml_bytes(resp.content)
+            stores: dict[str, tuple[str, str]] = {}
+            for vo in root.iter():
+                if vo.tag.lower().endswith(("item", "entpinfovo")):
+                    eid = (vo.findtext("entpId") or "").strip()
+                    ename = (vo.findtext("entpName") or "").strip()
+                    etype = _ENTP_TYPE_MAP.get((vo.findtext("entpTypeCode") or "").strip().upper(), "other")
+                    if eid:
+                        stores[eid] = (ename or f"매장-{eid}", etype)
+            if not stores:
+                return {}
+            with _CACHE_LOCK:
+                _STORE_CATALOG_CACHE[ckey] = (time.monotonic(), stores)
+            return stores
+        except Exception:
+            return {}
 
 
 def _get_item_price_entries(base: str, api_key: str, gid: str, inspect_days: list[str]) -> list[dict[str, str]]:
@@ -470,6 +480,10 @@ def _get_item_price_entries(base: str, api_key: str, gid: str, inspect_days: lis
         )
         price_resp.raise_for_status()
         price_root = _decode_xml_bytes(price_resp.content)
+        err_code = (price_root.findtext(".//returnReasonCode") or "").strip()
+        if err_code and err_code != "00":
+            err_msg = (price_root.findtext(".//returnAuthMsg") or price_root.findtext(".//resultMsg") or f"code={err_code}").strip()
+            raise ValueError(f"소비자원 가격 조회 오류: {err_msg}")
         found = [p for p in price_root.iter() if p.tag.lower().endswith(("item", "goodpricevo")) and p.findtext("goodPrice")]
         if found:
             entries = [
@@ -560,8 +574,6 @@ def _search_mock(query: str, mode: str, display: int, default_serving_g: float) 
             products.append(enriched)
         elif reason:
             unparsed.append({"name": row["title"], "reason": reason})
-        if len(products) >= display:
-            break
 
     products = _sort_by_retail_preference(products, mode)[:display]
 

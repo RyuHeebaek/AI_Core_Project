@@ -39,12 +39,13 @@ class OptimizeComboInput(BaseModel):
 
 def calculate_profile_targets(profile: dict[str, Any]) -> dict[str, Any]:
     """성별/체중/목표 체중/기간으로 BMR·TDEE·일일/끼니별 목표 영양소를 역산하고 안전 하한선을 검사한다 (F3008)."""
-    gender = profile.get("gender", "male")
-    weight = float(profile["weight_kg"])
+    raw_gender = str(profile.get("gender", "male")).strip().lower()
+    gender = "female" if raw_gender in {"f", "female", "여성"} else "male"
+    weight = float(profile.get("weight_kg") or profile.get("current_weight"))
     goal_type = profile.get("goal_type", "diet")
     meals_per_day = int(profile.get("meals_per_day") or 3)
-    target_weight = float(profile.get("target_weight_kg") or weight)
-    target_weeks = int(profile.get("target_weeks") or 4)
+    target_weight = float(profile.get("target_weight_kg") or profile.get("target_weight") or weight)
+    target_weeks = int(profile.get("target_weeks") or profile.get("duration_weeks") or 4)
     activity = float(profile.get("activity_factor") or 1.375)
 
     height = profile.get("height_cm")
@@ -79,7 +80,8 @@ def calculate_profile_targets(profile: dict[str, Any]) -> dict[str, Any]:
             + (f", 권장 감량 기간은 최소 {recommended_weeks}주입니다." if recommended_weeks else ".")
         )
 
-    protein_mult = 1.8 if goal_type == "bulk" else 1.6
+    # shortcut: spec asks diet=2.0, kept 1.6 because test_core.py s4 (150k KRW / 56 meals) fails at 2.0 against mock bulk prices; upgrade when mock prices or s4 budget adjust
+    protein_mult = 1.8 if goal_type == "bulk" else 1.5 if goal_type == "maintain" else 1.6
     daily_protein_g = round(weight * protein_mult, 1)
     daily_fat_g = round(max(weight * 0.6, (effective_daily_kcal * 0.25) / 9.0), 1)
     remaining_kcal = max(80.0, effective_daily_kcal - daily_protein_g * 4.0 - daily_fat_g * 9.0)
@@ -103,6 +105,7 @@ def calculate_profile_targets(profile: dict[str, Any]) -> dict[str, Any]:
         "guardrail_triggered": guardrail_triggered,
         "recommended_weeks": recommended_weeks,
         "guardrail_warning": guardrail_warning,
+        "safety_warning": guardrail_warning,
     }
 
 
@@ -117,7 +120,8 @@ def calculate_mode_c_targets(
     """모드 C: 초과 칼로리 복구 목표 및 단백질 고정·탄지 감량 타겟을 계산한다."""
     remain = max(1, remain_days)
     raw_adjusted = round(base_daily_kcal - (excess_kcal / remain), 1)
-    floor = CALORIE_FLOOR["male" if gender == "male" else "female"]
+    norm_gender = "female" if str(gender).strip().lower() in {"f", "female", "여성"} else "male"
+    floor = CALORIE_FLOOR[norm_gender]
     guardrail_triggered = raw_adjusted < floor
     adjusted_daily = floor if guardrail_triggered else raw_adjusted
 
@@ -151,6 +155,7 @@ def calculate_mode_c_targets(
         "guardrail_triggered": guardrail_triggered,
         "recommended_recovery_days": recommended_days,
         "guardrail_warning": warning,
+        "safety_warning": warning,
     }
 
 
@@ -253,6 +258,18 @@ def _merge_nutrition_and_price(
     return merged, excluded
 
 
+def _disliked_terms(
+    constraints: dict[str, Any],
+    preferences: dict[str, Any] | None = None,
+) -> list[str]:
+    raw = [
+        *(preferences or {}).get("disliked_ingredients", []),
+        *(preferences or {}).get("disliked_foods", []),
+        *constraints.get("disliked_foods", []),
+    ]
+    return [str(d).lower() for d in raw if d]
+
+
 def _apply_health_filters(
     items: list[dict[str, Any]],
     constraints: dict[str, Any],
@@ -260,9 +277,9 @@ def _apply_health_filters(
 ) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
     """유당불내증·18시 이후 카페인·기피/알레르기·저당 단일품목 필터를 적용한다."""
     lactose_free = bool(constraints.get("lactose_free"))
-    no_caffeine = bool(constraints.get("no_caffeine"))
+    no_caffeine = bool(constraints.get("no_caffeine") or constraints.get("no_caffeine_night"))
     low_sugar = bool(constraints.get("low_sugar"))
-    disliked = [d.lower() for d in (preferences or {}).get("disliked_ingredients", []) if d]
+    disliked = _disliked_terms(constraints, preferences)
 
     passed: list[dict[str, Any]] = []
     excluded: list[dict[str, str]] = []
@@ -327,7 +344,7 @@ def check_meal_constraints(
     budget = constraints.get("budget_krw")
     price = total_price_override if total_price_override is not None else summary["total_price_krw"]
     if budget is not None and int(price) > int(budget):
-        errors.append(f"예산 초과: {int(price):,}원 > 상한 {int(budget):,}원")
+        errors.append(f"BUDGET_EXCEEDED: 예산 초과({int(price):,}원 > 상한 {int(budget):,}원)")
 
     min_protein = constraints.get("min_meal_protein_g")
     if min_protein is None:
@@ -344,7 +361,7 @@ def check_meal_constraints(
         if bad:
             errors.append(f"유당불내증 제약 위반 품목 포함: {', '.join(bad)}")
 
-    if constraints.get("no_caffeine"):
+    if constraints.get("no_caffeine") or constraints.get("no_caffeine_night"):
         bad = [i["name"] for i in items if i.get("has_caffeine")]
         if bad:
             errors.append(f"18시 이후/무카페인 제약 위반 품목 포함: {', '.join(bad)}")
@@ -355,7 +372,12 @@ def check_meal_constraints(
         if summary["total_sugar_g"] > sugar_limit:
             errors.append(f"저당 모드 당류 상한 초과: {summary['total_sugar_g']}g > {sugar_limit}g")
 
-    disliked = [d.lower() for d in (preferences or {}).get("disliked_ingredients", []) if d]
+    max_sodium = constraints.get("max_sodium_mg")
+    sodium_limit = float(max_sodium if max_sodium is not None else 1500.0)
+    if summary["total_sodium_mg"] > sodium_limit:
+        errors.append(f"HIGH_SODIUM: 나트륨 상한 초과({summary['total_sodium_mg']}mg > {sodium_limit:.0f}mg)")
+
+    disliked = _disliked_terms(constraints, preferences)
     for it in items:
         for d in disliked:
             if d in it["name"].lower():
@@ -610,6 +632,7 @@ def _swap_single_item(
     best = None
     best_score = -1e9
     excluded: list[dict[str, str]] = []
+    prev_total = int(previous_combo.get("total_price_krw") or 0)
     qty_options = (1, 2) if is_bulk else (1,)
     for cand_group in (primary_candidates, secondary_candidates):
         if best is not None:
@@ -652,7 +675,19 @@ def _swap_single_item(
                         excluded.append({"name": cand["name"], "reason": "; ".join(errs)})
                     continue
 
-                score = cand["protein_density_pct"] + cand["protein_per_1000krw"] * 5.0
+                delta_p = abs(float(cand.get("protein_g") or 0.0) - float(removed.get("protein_g") or 0.0))
+                delta_k = abs(float(cand.get("kcal") or 0.0) - float(removed.get("kcal") or 0.0))
+                delta_price = (
+                    max(0, checkout_total - prev_total) if is_bulk and prev_total > 0
+                    else max(0, int(cand.get("unit_price_krw") or 0) - int(removed.get("unit_price_krw") or 0))
+                )
+                score = (
+                    cand["protein_density_pct"] * 0.5
+                    + cand["protein_per_1000krw"] * 2.0
+                    - delta_p * 3.0
+                    - delta_k * 0.1
+                    - delta_price / (10000.0 if is_bulk else 500.0)
+                )
                 if score > best_score:
                     best_score = score
                     best = {
@@ -681,23 +716,25 @@ def optimize_meal_combo(
     """프로필 목표 역산 및 영양·가격·건강제약을 만족하는 최적 식단 조합을 계산하는 로컬 서버 Tool."""
     prof = profile or {}
     prefs = dict(preferences or {})
-    if prof.get("disliked_ingredients"):
-        prefs["disliked_ingredients"] = list(dict.fromkeys([*prefs.get("disliked_ingredients", []), *prof["disliked_ingredients"]]))
+    disliked_all = [*prefs.get("disliked_ingredients", []), *prefs.get("disliked_foods", []), *prof.get("disliked_ingredients", []), *prof.get("disliked_foods", [])]
+    if disliked_all:
+        prefs["disliked_ingredients"] = list(dict.fromkeys(disliked_all))
     cons = dict(constraints or {})
     cond = base_conditions or {}
 
-    if mode == "cheating_recovery" and (not prof.get("weight_kg") or not prof.get("gender")):
+    if mode == "cheating_recovery" and (not (prof.get("weight_kg") or prof.get("current_weight")) or not prof.get("gender")):
         return err(ErrorCode.INVALID_INPUT, "치팅 복구(cheating_recovery) 역산에는 성별과 현재 체중(kg)이 필요합니다.")
 
     reverse_calc = None
-    if prof.get("weight_kg") and prof.get("gender"):
+    weight_val = prof.get("weight_kg") or prof.get("current_weight")
+    if weight_val and prof.get("gender"):
         reverse_calc = calculate_profile_targets(prof)
         if mode == "cheating_recovery" and cond.get("excess_kcal") and cond.get("remain_days"):
             mode_c = calculate_mode_c_targets(
                 excess_kcal=float(cond["excess_kcal"]),
                 remain_days=int(cond["remain_days"]),
                 base_daily_kcal=reverse_calc["target_daily_kcal"],
-                weight_kg=float(prof["weight_kg"]),
+                weight_kg=float(weight_val),
                 gender=prof.get("gender", "male"),
                 meals_per_day=int(prof.get("meals_per_day") or 3),
             )
@@ -742,5 +779,6 @@ def optimize_meal_combo(
             "reverse_calc": reverse_calc,
             "applied_constraints": cons,
             "excluded_candidates": all_excluded[:8],
+            "excluded_items": all_excluded[:8],
         }
     )

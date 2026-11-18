@@ -1,0 +1,1465 @@
+{
+  "session_id": "sc2",
+  "events": [
+    {
+      "id": 41,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 1,
+      "event_type": "node_enter",
+      "agent_name": "PlannerAgent",
+      "node_name": "planner_analyze",
+      "payload": {
+        "user_message": "강남역 근처 편의점 8000원 이하 고단백 한끼 추천해줘"
+      },
+      "created_at": "2026-11-18T14:03:03.948696+00:00"
+    },
+    {
+      "id": 42,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 2,
+      "event_type": "llm_decision",
+      "agent_name": "PlannerAgent",
+      "node_name": "planner_analyze",
+      "payload": {
+        "mode": "cvs_instant",
+        "reason": "규칙 기반 조건 추출 완료",
+        "llm_called": false,
+        "missing": []
+      },
+      "created_at": "2026-11-18T14:03:03.953247+00:00"
+    },
+    {
+      "id": 43,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 3,
+      "event_type": "node_exit",
+      "agent_name": "PlannerAgent",
+      "node_name": "planner_analyze",
+      "payload": {
+        "mode": "cvs_instant",
+        "clarification_needed": false
+      },
+      "created_at": "2026-11-18T14:03:03.956487+00:00"
+    },
+    {
+      "id": 44,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 4,
+      "event_type": "node_enter",
+      "agent_name": "PlannerAgent",
+      "node_name": "planner_plan",
+      "payload": {
+        "is_replan": false,
+        "replan_count": 0
+      },
+      "created_at": "2026-11-18T14:03:03.960415+00:00"
+    },
+    {
+      "id": 45,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 5,
+      "event_type": "planner_worker_msg",
+      "agent_name": "PlannerAgent",
+      "node_name": "planner_plan",
+      "payload": {
+        "task_list": [
+          {
+            "task_id": "t_nutrition_0",
+            "tool_name": "search_nutrition_db",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_nutrition_1",
+            "tool_name": "search_nutrition_db",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_nutrition_2",
+            "tool_name": "search_nutrition_db",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_nutrition_3",
+            "tool_name": "search_nutrition_db",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_nutrition_4",
+            "tool_name": "search_nutrition_db",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_nutrition_5",
+            "tool_name": "search_nutrition_db",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_shopping_0",
+            "tool_name": "search_product_price",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_shopping_1",
+            "tool_name": "search_product_price",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_shopping_2",
+            "tool_name": "search_product_price",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_shopping_3",
+            "tool_name": "search_product_price",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_shopping_4",
+            "tool_name": "search_product_price",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_shopping_5",
+            "tool_name": "search_product_price",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_store",
+            "tool_name": "search_nearby_store",
+            "fixed_args": [
+              "location"
+            ]
+          },
+          {
+            "task_id": "t_optimize",
+            "tool_name": "optimize_meal_combo",
+            "fixed_args": [
+              "mode",
+              "constraints"
+            ]
+          }
+        ]
+      },
+      "created_at": "2026-11-18T14:03:03.964217+00:00"
+    },
+    {
+      "id": 46,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 6,
+      "event_type": "node_exit",
+      "agent_name": "PlannerAgent",
+      "node_name": "planner_plan",
+      "payload": {
+        "task_count": 14
+      },
+      "created_at": "2026-11-18T14:03:03.967741+00:00"
+    },
+    {
+      "id": 47,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 7,
+      "event_type": "node_enter",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "task_count": 14
+      },
+      "created_at": "2026-11-18T14:03:03.971641+00:00"
+    },
+    {
+      "id": 48,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 8,
+      "event_type": "tool_call_start",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "args": {
+          "query": "닭가슴살",
+          "limit": 20
+        },
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.975440+00:00"
+    },
+    {
+      "id": 49,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 9,
+      "event_type": "tool_call_end",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "ok": true,
+        "output_summary": {
+          "items_count": 5,
+          "source_mode": "mock_fallback"
+        },
+        "error": null,
+        "elapsed_ms": 0.1,
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.975524+00:00"
+    },
+    {
+      "id": 50,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 10,
+      "event_type": "tool_call_start",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "args": {
+          "query": "달걀",
+          "limit": 20
+        },
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.975603+00:00"
+    },
+    {
+      "id": 51,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 11,
+      "event_type": "tool_call_end",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "ok": true,
+        "output_summary": {
+          "items_count": 1,
+          "source_mode": "mock_fallback"
+        },
+        "error": null,
+        "elapsed_ms": 0.1,
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.975708+00:00"
+    },
+    {
+      "id": 52,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 12,
+      "event_type": "tool_call_start",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "args": {
+          "query": "두부",
+          "limit": 20
+        },
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.975727+00:00"
+    },
+    {
+      "id": 53,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 13,
+      "event_type": "tool_call_end",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "ok": true,
+        "output_summary": {
+          "items_count": 2,
+          "source_mode": "mock_fallback"
+        },
+        "error": null,
+        "elapsed_ms": 0.1,
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.975810+00:00"
+    },
+    {
+      "id": 54,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 14,
+      "event_type": "tool_call_start",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "args": {
+          "query": "두유",
+          "limit": 20
+        },
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.975922+00:00"
+    },
+    {
+      "id": 55,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 15,
+      "event_type": "tool_call_end",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "ok": true,
+        "output_summary": {
+          "items_count": 1,
+          "source_mode": "mock_fallback"
+        },
+        "error": null,
+        "elapsed_ms": 0.1,
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.975989+00:00"
+    },
+    {
+      "id": 56,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 16,
+      "event_type": "tool_call_start",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "args": {
+          "query": "탄산수",
+          "limit": 20
+        },
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.975997+00:00"
+    },
+    {
+      "id": 57,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 17,
+      "event_type": "tool_call_end",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "ok": true,
+        "output_summary": {
+          "items_count": 1,
+          "source_mode": "mock_fallback"
+        },
+        "error": null,
+        "elapsed_ms": 0.0,
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.976042+00:00"
+    },
+    {
+      "id": 58,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 18,
+      "event_type": "tool_call_start",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "args": {
+          "query": "참치",
+          "limit": 20
+        },
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.976052+00:00"
+    },
+    {
+      "id": 59,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 19,
+      "event_type": "tool_call_end",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "ok": true,
+        "output_summary": {
+          "items_count": 1,
+          "source_mode": "mock_fallback"
+        },
+        "error": null,
+        "elapsed_ms": 0.0,
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.976093+00:00"
+    },
+    {
+      "id": 60,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 20,
+      "event_type": "tool_call_start",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "args": {
+          "query": "계란",
+          "mode": "cvs_instant",
+          "display": 8
+        },
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.976167+00:00"
+    },
+    {
+      "id": 61,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 21,
+      "event_type": "tool_call_end",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "ok": true,
+        "output_summary": {
+          "products_count": 1,
+          "source_mode": "mock_fallback"
+        },
+        "error": null,
+        "elapsed_ms": 0.1,
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.976246+00:00"
+    },
+    {
+      "id": 62,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 22,
+      "event_type": "tool_call_start",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "args": {
+          "query": "두부",
+          "mode": "cvs_instant",
+          "display": 8
+        },
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.976252+00:00"
+    },
+    {
+      "id": 63,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 23,
+      "event_type": "tool_call_end",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "ok": true,
+        "output_summary": {
+          "products_count": 2,
+          "source_mode": "mock_fallback"
+        },
+        "error": null,
+        "elapsed_ms": 0.1,
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.976311+00:00"
+    },
+    {
+      "id": 64,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 24,
+      "event_type": "tool_call_start",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "args": {
+          "query": "두유",
+          "mode": "cvs_instant",
+          "display": 8
+        },
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.976316+00:00"
+    },
+    {
+      "id": 65,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 25,
+      "event_type": "tool_call_end",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "ok": true,
+        "output_summary": {
+          "products_count": 1,
+          "source_mode": "mock_fallback"
+        },
+        "error": null,
+        "elapsed_ms": 0.1,
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.976368+00:00"
+    },
+    {
+      "id": 66,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 26,
+      "event_type": "tool_call_start",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "args": {
+          "query": "참치",
+          "mode": "cvs_instant",
+          "display": 8
+        },
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.976436+00:00"
+    },
+    {
+      "id": 67,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 27,
+      "event_type": "tool_call_end",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "ok": true,
+        "output_summary": {
+          "products_count": 1,
+          "source_mode": "mock_fallback"
+        },
+        "error": null,
+        "elapsed_ms": 0.1,
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.976526+00:00"
+    },
+    {
+      "id": 68,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 28,
+      "event_type": "tool_call_start",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "args": {
+          "query": "닭가슴살",
+          "mode": "cvs_instant",
+          "display": 8
+        },
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.976537+00:00"
+    },
+    {
+      "id": 69,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 29,
+      "event_type": "tool_call_end",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "ok": true,
+        "output_summary": {
+          "products_count": 4,
+          "source_mode": "mock_fallback"
+        },
+        "error": null,
+        "elapsed_ms": 0.1,
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.976629+00:00"
+    },
+    {
+      "id": 70,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 30,
+      "event_type": "tool_call_start",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "args": {
+          "query": "탄산수",
+          "mode": "cvs_instant",
+          "display": 8
+        },
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.976637+00:00"
+    },
+    {
+      "id": 71,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 31,
+      "event_type": "tool_call_end",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "ok": true,
+        "output_summary": {
+          "products_count": 1,
+          "source_mode": "mock_fallback"
+        },
+        "error": null,
+        "elapsed_ms": 0.1,
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.976692+00:00"
+    },
+    {
+      "id": 72,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 32,
+      "event_type": "tool_call_start",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nearby_store",
+        "args": {
+          "location": "강남역",
+          "brands": [
+            "CU",
+            "GS25",
+            "세븐일레븐"
+          ],
+          "radius_m": 500
+        },
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.976702+00:00"
+    },
+    {
+      "id": 73,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 33,
+      "event_type": "tool_call_end",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nearby_store",
+        "ok": true,
+        "output_summary": {
+          "stores_count": 3,
+          "source_mode": "mock_fallback"
+        },
+        "error": null,
+        "elapsed_ms": 0.0,
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:03.976732+00:00"
+    },
+    {
+      "id": 74,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 34,
+      "event_type": "tool_call_start",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "optimize_meal_combo",
+        "args": {
+          "mode": "cvs_instant",
+          "nutrition_count": 11,
+          "shopping_count": 10,
+          "constraints": {
+            "budget_krw": 8000,
+            "min_meal_protein_g": 30.0
+          }
+        },
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:04.045215+00:00"
+    },
+    {
+      "id": 75,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 35,
+      "event_type": "tool_call_end",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "optimize_meal_combo",
+        "ok": true,
+        "output_summary": {
+          "selected": [
+            "초고염 닭가슴살 도시락"
+          ],
+          "total_price_krw": 5500
+        },
+        "error": null,
+        "elapsed_ms": 0.0,
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:04.045234+00:00"
+    },
+    {
+      "id": 76,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 36,
+      "event_type": "node_exit",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "has_combo": true,
+        "escalation_count": 0,
+        "fatal": false
+      },
+      "created_at": "2026-11-18T14:03:04.050234+00:00"
+    },
+    {
+      "id": 77,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 37,
+      "event_type": "node_enter",
+      "agent_name": "NutritionValidatorAgent",
+      "node_name": "validator_check",
+      "payload": {
+        "mode": "cvs_instant"
+      },
+      "created_at": "2026-11-18T14:03:04.052596+00:00"
+    },
+    {
+      "id": 78,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 38,
+      "event_type": "node_exit",
+      "agent_name": "NutritionValidatorAgent",
+      "node_name": "validator_check",
+      "payload": {
+        "passed": false,
+        "stage1_errors": [
+          "HIGH_SODIUM: 나트륨 상한 초과(1680.0mg > 1500mg)"
+        ],
+        "stage2_errors": []
+      },
+      "created_at": "2026-11-18T14:03:04.054766+00:00"
+    },
+    {
+      "id": 79,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 39,
+      "event_type": "node_enter",
+      "agent_name": "PlannerAgent",
+      "node_name": "planner_plan",
+      "payload": {
+        "is_replan": true,
+        "replan_count": 0
+      },
+      "created_at": "2026-11-18T14:03:04.057302+00:00"
+    },
+    {
+      "id": 80,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 40,
+      "event_type": "replan",
+      "agent_name": "PlannerAgent",
+      "node_name": "planner_plan",
+      "payload": {
+        "replan_count": 1,
+        "max_replan": 3,
+        "reason": "HIGH_SODIUM: 나트륨 상한 초과(1680.0mg > 1500mg)"
+      },
+      "created_at": "2026-11-18T14:03:04.060006+00:00"
+    },
+    {
+      "id": 81,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 41,
+      "event_type": "planner_worker_msg",
+      "agent_name": "PlannerAgent",
+      "node_name": "planner_plan",
+      "payload": {
+        "task_list": [
+          {
+            "task_id": "t_nutrition_0",
+            "tool_name": "search_nutrition_db",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_nutrition_1",
+            "tool_name": "search_nutrition_db",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_nutrition_2",
+            "tool_name": "search_nutrition_db",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_nutrition_3",
+            "tool_name": "search_nutrition_db",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_nutrition_4",
+            "tool_name": "search_nutrition_db",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_nutrition_5",
+            "tool_name": "search_nutrition_db",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_nutrition_6",
+            "tool_name": "search_nutrition_db",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_nutrition_7",
+            "tool_name": "search_nutrition_db",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_shopping_0",
+            "tool_name": "search_product_price",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_shopping_1",
+            "tool_name": "search_product_price",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_shopping_2",
+            "tool_name": "search_product_price",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_shopping_3",
+            "tool_name": "search_product_price",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_shopping_4",
+            "tool_name": "search_product_price",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_shopping_5",
+            "tool_name": "search_product_price",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_shopping_6",
+            "tool_name": "search_product_price",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_shopping_7",
+            "tool_name": "search_product_price",
+            "fixed_args": []
+          },
+          {
+            "task_id": "t_store",
+            "tool_name": "search_nearby_store",
+            "fixed_args": [
+              "location"
+            ]
+          },
+          {
+            "task_id": "t_optimize",
+            "tool_name": "optimize_meal_combo",
+            "fixed_args": [
+              "mode",
+              "constraints"
+            ]
+          }
+        ]
+      },
+      "created_at": "2026-11-18T14:03:04.062788+00:00"
+    },
+    {
+      "id": 82,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 42,
+      "event_type": "node_exit",
+      "agent_name": "PlannerAgent",
+      "node_name": "planner_plan",
+      "payload": {
+        "task_count": 18
+      },
+      "created_at": "2026-11-18T14:03:04.065722+00:00"
+    },
+    {
+      "id": 83,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 43,
+      "event_type": "node_enter",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "task_count": 18
+      },
+      "created_at": "2026-11-18T14:03:04.068962+00:00"
+    },
+    {
+      "id": 84,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 44,
+      "event_type": "tool_cache_hit",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "cache_key": "search_nutrition_db:{\"limit\": 20, \"query\": \"닭가슴살\"}"
+      },
+      "created_at": "2026-11-18T14:03:04.072378+00:00"
+    },
+    {
+      "id": 85,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 45,
+      "event_type": "tool_cache_hit",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "cache_key": "search_nutrition_db:{\"limit\": 20, \"query\": \"달걀\"}"
+      },
+      "created_at": "2026-11-18T14:03:04.075076+00:00"
+    },
+    {
+      "id": 86,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 46,
+      "event_type": "tool_cache_hit",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "cache_key": "search_nutrition_db:{\"limit\": 20, \"query\": \"두부\"}"
+      },
+      "created_at": "2026-11-18T14:03:04.077421+00:00"
+    },
+    {
+      "id": 87,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 47,
+      "event_type": "tool_cache_hit",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "cache_key": "search_nutrition_db:{\"limit\": 20, \"query\": \"두유\"}"
+      },
+      "created_at": "2026-11-18T14:03:04.079776+00:00"
+    },
+    {
+      "id": 88,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 48,
+      "event_type": "tool_cache_hit",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "cache_key": "search_nutrition_db:{\"limit\": 20, \"query\": \"탄산수\"}"
+      },
+      "created_at": "2026-11-18T14:03:04.082388+00:00"
+    },
+    {
+      "id": 89,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 49,
+      "event_type": "tool_cache_hit",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "cache_key": "search_nutrition_db:{\"limit\": 20, \"query\": \"참치\"}"
+      },
+      "created_at": "2026-11-18T14:03:04.085237+00:00"
+    },
+    {
+      "id": 90,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 50,
+      "event_type": "tool_call_start",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "args": {
+          "query": "요거트",
+          "limit": 20
+        },
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:04.071783+00:00"
+    },
+    {
+      "id": 91,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 51,
+      "event_type": "tool_call_end",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "ok": true,
+        "output_summary": {
+          "items_count": 1,
+          "source_mode": "mock_fallback"
+        },
+        "error": null,
+        "elapsed_ms": 0.1,
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:04.071868+00:00"
+    },
+    {
+      "id": 92,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 52,
+      "event_type": "tool_call_start",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "args": {
+          "query": "아몬드",
+          "limit": 20
+        },
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:04.071927+00:00"
+    },
+    {
+      "id": 93,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 53,
+      "event_type": "tool_call_end",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nutrition_db",
+        "ok": true,
+        "output_summary": {
+          "items_count": 2,
+          "source_mode": "mock_fallback"
+        },
+        "error": null,
+        "elapsed_ms": 0.1,
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:04.071981+00:00"
+    },
+    {
+      "id": 94,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 54,
+      "event_type": "tool_cache_hit",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "cache_key": "search_product_price:{\"display\": 8, \"mode\": \"cvs_instant\", \"query\": \"계란\"}"
+      },
+      "created_at": "2026-11-18T14:03:04.096490+00:00"
+    },
+    {
+      "id": 95,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 55,
+      "event_type": "tool_cache_hit",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "cache_key": "search_product_price:{\"display\": 8, \"mode\": \"cvs_instant\", \"query\": \"두부\"}"
+      },
+      "created_at": "2026-11-18T14:03:04.098744+00:00"
+    },
+    {
+      "id": 96,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 56,
+      "event_type": "tool_cache_hit",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "cache_key": "search_product_price:{\"display\": 8, \"mode\": \"cvs_instant\", \"query\": \"두유\"}"
+      },
+      "created_at": "2026-11-18T14:03:04.101143+00:00"
+    },
+    {
+      "id": 97,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 57,
+      "event_type": "tool_cache_hit",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "cache_key": "search_product_price:{\"display\": 8, \"mode\": \"cvs_instant\", \"query\": \"참치\"}"
+      },
+      "created_at": "2026-11-18T14:03:04.103939+00:00"
+    },
+    {
+      "id": 98,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 58,
+      "event_type": "tool_cache_hit",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "cache_key": "search_product_price:{\"display\": 8, \"mode\": \"cvs_instant\", \"query\": \"닭가슴살\"}"
+      },
+      "created_at": "2026-11-18T14:03:04.106843+00:00"
+    },
+    {
+      "id": 99,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 59,
+      "event_type": "tool_cache_hit",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "cache_key": "search_product_price:{\"display\": 8, \"mode\": \"cvs_instant\", \"query\": \"탄산수\"}"
+      },
+      "created_at": "2026-11-18T14:03:04.109475+00:00"
+    },
+    {
+      "id": 100,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 60,
+      "event_type": "tool_call_start",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "args": {
+          "query": "요거트",
+          "mode": "cvs_instant",
+          "display": 8
+        },
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:04.071988+00:00"
+    },
+    {
+      "id": 101,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 61,
+      "event_type": "tool_call_end",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "ok": true,
+        "output_summary": {
+          "products_count": 1,
+          "source_mode": "mock_fallback"
+        },
+        "error": null,
+        "elapsed_ms": 0.1,
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:04.072063+00:00"
+    },
+    {
+      "id": 102,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 62,
+      "event_type": "tool_call_start",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "args": {
+          "query": "아몬드",
+          "mode": "cvs_instant",
+          "display": 8
+        },
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:04.072126+00:00"
+    },
+    {
+      "id": 103,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 63,
+      "event_type": "tool_call_end",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_product_price",
+        "ok": true,
+        "output_summary": {
+          "products_count": 2,
+          "source_mode": "mock_fallback"
+        },
+        "error": null,
+        "elapsed_ms": 0.1,
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:04.072224+00:00"
+    },
+    {
+      "id": 104,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 64,
+      "event_type": "tool_call_start",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nearby_store",
+        "args": {
+          "location": "강남역",
+          "brands": [
+            "CU",
+            "GS25",
+            "세븐일레븐"
+          ],
+          "radius_m": 1000
+        },
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:04.072234+00:00"
+    },
+    {
+      "id": 105,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 65,
+      "event_type": "tool_call_end",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "search_nearby_store",
+        "ok": true,
+        "output_summary": {
+          "stores_count": 3,
+          "source_mode": "mock_fallback"
+        },
+        "error": null,
+        "elapsed_ms": 0.0,
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:04.072268+00:00"
+    },
+    {
+      "id": 106,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 66,
+      "event_type": "tool_call_start",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "optimize_meal_combo",
+        "args": {
+          "mode": "cvs_instant",
+          "nutrition_count": 14,
+          "shopping_count": 13,
+          "constraints": {
+            "budget_krw": 8000,
+            "min_meal_protein_g": 30.0
+          }
+        },
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:04.122693+00:00"
+    },
+    {
+      "id": 107,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 67,
+      "event_type": "tool_call_end",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "tool_name": "optimize_meal_combo",
+        "ok": true,
+        "output_summary": {
+          "selected": [
+            "수비드 닭가슴살 100g",
+            "무가당 매일 두유 99.9"
+          ],
+          "total_price_krw": 4500
+        },
+        "error": null,
+        "elapsed_ms": 1.8,
+        "is_retry": false
+      },
+      "created_at": "2026-11-18T14:03:04.124509+00:00"
+    },
+    {
+      "id": 108,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 68,
+      "event_type": "node_exit",
+      "agent_name": "WorkerAgent",
+      "node_name": "worker_execute",
+      "payload": {
+        "has_combo": true,
+        "escalation_count": 0,
+        "fatal": false
+      },
+      "created_at": "2026-11-18T14:03:04.130295+00:00"
+    },
+    {
+      "id": 109,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 69,
+      "event_type": "node_enter",
+      "agent_name": "NutritionValidatorAgent",
+      "node_name": "validator_check",
+      "payload": {
+        "mode": "cvs_instant"
+      },
+      "created_at": "2026-11-18T14:03:04.133285+00:00"
+    },
+    {
+      "id": 110,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 70,
+      "event_type": "node_exit",
+      "agent_name": "NutritionValidatorAgent",
+      "node_name": "validator_check",
+      "payload": {
+        "passed": true,
+        "stage1_errors": [],
+        "stage2_errors": []
+      },
+      "created_at": "2026-11-18T14:03:04.136291+00:00"
+    },
+    {
+      "id": 111,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 71,
+      "event_type": "node_enter",
+      "agent_name": "ResponderAgent",
+      "node_name": "responder",
+      "payload": {
+        "mode": "cvs_instant"
+      },
+      "created_at": "2026-11-18T14:03:04.139765+00:00"
+    },
+    {
+      "id": 112,
+      "session_id": "sc2",
+      "run_id": "f1edb92c4b94",
+      "seq": 72,
+      "event_type": "node_exit",
+      "agent_name": "ResponderAgent",
+      "node_name": "responder",
+      "payload": {
+        "reply_length": 1473
+      },
+      "created_at": "2026-11-18T14:03:04.142861+00:00"
+    }
+  ],
+  "latest_anomaly": {
+    "status": "이상 없음",
+    "warnings": [],
+    "diagnosis": null,
+    "llm_called": false,
+    "created_at": "2026-11-18T14:03:04.150015+00:00"
+  },
+  "chat_response_summary": {
+    "mode": "cvs_instant",
+    "replan_count": 1,
+    "llm_calls_count": 0,
+    "validation_result": {
+      "passed": true,
+      "stage1_errors": [],
+      "stage2_errors": [],
+      "corrected_totals": {
+        "total_kcal": 203.0,
+        "total_protein_g": 33.5,
+        "total_carbs_g": 3.8,
+        "total_fat_g": 6.1,
+        "total_sugar_g": 1.4,
+        "total_sodium_mg": 390.0,
+        "total_price_krw": 4500,
+        "protein_density_pct": 66.0,
+        "protein_per_1000krw": 7.44
+      },
+      "fatal": false
+    }
+  }
+}

@@ -48,11 +48,14 @@ def _find_overlaps(
     plan_date: str,
     start_time: str | None,
     end_time: str | None,
+    session_id: str | None = None,
     exclude_id: int | None = None,
 ) -> list[dict[str, Any]]:
+    if not session_id:
+        return []
     rows = conn.execute(
-        "SELECT id, title, plan_date, start_time, end_time FROM plans WHERE plan_date = ?",
-        (plan_date,),
+        "SELECT id, title, plan_date, start_time, end_time FROM plans WHERE plan_date = ? AND session_id = ?",
+        (plan_date, session_id),
     ).fetchall()
 
     warnings: list[dict[str, Any]] = []
@@ -84,7 +87,7 @@ def create_plan(payload: PlanCreate) -> PlanSaveResponse:
     _validate_time_range(payload.start_time, payload.end_time)
     now = utc_now_iso()
     with get_conn(immediate=True) as conn:
-        overlaps = _find_overlaps(conn, payload.plan_date, payload.start_time, payload.end_time)
+        overlaps = _find_overlaps(conn, payload.plan_date, payload.start_time, payload.end_time, session_id=payload.session_id)
         cur = conn.execute(
             """
             INSERT INTO plans
@@ -179,7 +182,7 @@ def update_plan(plan_id: int, payload: PlanUpdate) -> PlanSaveResponse:
             ),
         )
         updated_row = conn.execute("SELECT * FROM plans WHERE id = ?", (plan_id,)).fetchone()
-        overlaps = _find_overlaps(conn, new_date, new_start, new_end, exclude_id=plan_id)
+        overlaps = _find_overlaps(conn, new_date, new_start, new_end, session_id=row["session_id"], exclude_id=plan_id)
 
     return PlanSaveResponse(plan=_row_to_plan(updated_row), overlap_warnings=overlaps)
 

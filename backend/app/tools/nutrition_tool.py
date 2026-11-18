@@ -165,12 +165,12 @@ def _infer_food_category(name: str) -> str:
     lower = name.lower()
     if any(k in lower for k in _SNACK_BAKERY_WORDS):
         return "snack"
+    if any(k in lower for k in _DISH_WORDS):
+        return "main"
     if any(k in lower for k in ("현미", "곤약밥", "오트밀", "귀리", "고구마")):
         return "bulk_carb"
     if any(k in lower for k in ("계란", "달걀", "반숙란", "감동란", "구운란", "요거트", "두부바", "아몬드", "견과", "바나나")):
         return "sub"
-    if any(k in lower for k in _DISH_WORDS):
-        return "main"
     if any(k in lower for k in ("음료", "두유", "아몬드 브리즈", "콜라", "탄산수", "아메리카노", "커피", "드링크", "쉐이크", "주스", "우유", "라떼")):
         return "drink"
     return "main"

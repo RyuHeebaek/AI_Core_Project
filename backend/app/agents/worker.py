@@ -67,6 +67,21 @@ def _logged_args(tool_name: str, current_args: dict[str, Any]) -> dict[str, Any]
     }
 
 
+def _tool_output_summary(tool_name: str, result: dict[str, Any]) -> dict[str, Any] | None:
+    if not result.get("ok"):
+        return None
+    data = result.get("data") or {}
+    if tool_name == "search_nutrition_db":
+        return {"items_count": len(data.get("items", [])), "source_mode": data.get("source_mode")}
+    if tool_name == "search_product_price":
+        return {"products_count": len(data.get("products", [])), "source_mode": data.get("source_mode")}
+    if tool_name == "search_nearby_store":
+        return {"stores_count": len(data.get("stores", [])), "source_mode": data.get("source_mode")}
+    if tool_name == "optimize_meal_combo":
+        return {"selected": [i.get("name") for i in data.get("selected_items", [])], "total_price_krw": data.get("total_price_krw")}
+    return None
+
+
 def _execute_uncached_task(
     session_id: str,
     run_id: str,
@@ -115,6 +130,7 @@ def _execute_uncached_task(
                 {
                     "tool_name": tool_name,
                     "ok": result["ok"],
+                    "output_summary": _tool_output_summary(tool_name, result),
                     "error": result.get("error"),
                     "elapsed_ms": elapsed_ms,
                     "is_retry": attempt > 0,
@@ -197,7 +213,7 @@ def worker_node(state: AgentState) -> dict[str, Any]:
         "search_nearby_store": store_cache,
     }
 
-    worker_results: dict[str, Any] = {}
+    opt_res: dict[str, Any] | None = None
     escalations: list[dict[str, Any]] = []
     trace = list(state.get("execution_trace", []))
     llm_calls = int(state.get("llm_calls_count", 0))
@@ -205,7 +221,8 @@ def worker_node(state: AgentState) -> dict[str, Any]:
 
     event_bus.publish(AgentEvent(session_id, run_id, "node_enter", "WorkerAgent", "worker_execute", {"task_count": len(task_list)}))
 
-    # 독립 read-only 조회 태스크(depends_on == []) 중 캐시 미스 항목을 병렬 선실행
+    # 독립 read-only 조회 태스크(depends_on == []) 중 캐시 미스 항목을 병렬 선실행 (키 누락 시 불필요한 병렬 호출 방지)
+    settings = get_settings()
     prefetch_jobs: dict[str, tuple[str, Any, dict[str, Any], list[str], str]] = {}
     for task in task_list:
         tool_name = task["tool_name"]
@@ -218,8 +235,12 @@ def worker_node(state: AgentState) -> dict[str, Any]:
         if spec and ckey not in cache and ckey not in prefetch_jobs:
             prefetch_jobs[ckey] = (task["task_id"], spec, args, list(task.get("fixed_args", [])), tool_name)
 
+    has_missing_live_key = (not settings.use_mock) and (
+        (not settings.data_go_kr_api_key and any(j[4] in {"search_nutrition_db", "search_product_price"} for j in prefetch_jobs.values()))
+        or (not settings.kakao_rest_api_key and any(j[4] == "search_nearby_store" for j in prefetch_jobs.values()))
+    )
     prefetched: dict[str, dict[str, Any]] = {}
-    if len(prefetch_jobs) > 1:
+    if len(prefetch_jobs) > 1 and not has_missing_live_key:
         keys = list(prefetch_jobs.keys())
         with ThreadPoolExecutor(max_workers=min(4, len(keys))) as pool:
             outcomes = list(
@@ -300,7 +321,8 @@ def worker_node(state: AgentState) -> dict[str, Any]:
             if cache is not None and outcome["cacheable"]:
                 cache[ckey] = result
 
-        worker_results[tool_name] = result
+        if tool_name == "optimize_meal_combo":
+            opt_res = result
         if fatal_error:
             break
 
@@ -324,13 +346,14 @@ def worker_node(state: AgentState) -> dict[str, Any]:
                     basis_notes.append(data["stock_disclaimer"])
 
     candidate_combo: dict[str, Any] = {}
-    opt_res = worker_results.get("optimize_meal_combo")
     if opt_res and opt_res.get("ok"):
         candidate_combo = dict(opt_res["data"])
         candidate_combo["stores"] = collected_stores
         candidate_combo["is_estimated"] = is_estimated
         candidate_combo["basis_notes"] = list(dict.fromkeys(basis_notes))
-        candidate_combo["excluded_candidates"] = list(candidate_combo.get("excluded_candidates", [])) + excluded_from_tools
+        merged_excluded = list(candidate_combo.get("excluded_candidates", [])) + excluded_from_tools
+        candidate_combo["excluded_candidates"] = merged_excluded
+        candidate_combo["excluded_items"] = merged_excluded
 
     event_bus.publish(
         AgentEvent(
@@ -344,7 +367,6 @@ def worker_node(state: AgentState) -> dict[str, Any]:
     )
 
     return {
-        "worker_results": worker_results,
         "worker_escalations": escalations,
         "nutrition_cache": nutrition_cache,
         "shopping_cache": shopping_cache,

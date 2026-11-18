@@ -92,7 +92,7 @@ def chat_endpoint(req: ChatRequest) -> ChatResponse:
         llm_calls_count=int(final_state.get("llm_calls_count", 0)),
         execution_trace=trace,
         api_status=get_api_key_status(),
-        error_notice=fatal.get("message") if fatal else None,
+        error_notice=f"[{fatal['code']}] {fatal.get('message')}" if fatal else None,
     )
 
 

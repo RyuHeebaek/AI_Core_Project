@@ -40,12 +40,12 @@
 ## 2. 현재 구현 상태 (Last Verified: 2026-11-18)
 
 - **원격 저장소:** `https://github.com/RyuHeebaek/AI_Core_Project.git` (`main` 브랜치)
-- **자동화 테스트:** `pytest -v backend/tests/test_core.py` → **10 passed in 4.00s** (`USE_MOCK=true` + 실시간 XML/JSON/카카오 파서 Mock + 감사 회귀 #1~#15 검증).
+- **자동화 테스트:** `.venv/bin/pytest -v backend/tests/test_core.py backend/tests/test_scenarios.py` → **11 passed in 3.07s** (`USE_MOCK=true` + `USE_MOCK=false` 무키 `MISSING_API_KEY` + 실시간 파서 Mock + 대표 시나리오 5종 + 전수 감사 회귀 검증).
 - **구현 완료 모듈:**
   - **Backend API:** `POST /api/chat`, `GET/PUT /api/profiles/{session_id}`, CRUD `/api/plans` (`PUT`/`PATCH` 및 시간 중복 경고), `GET/POST analyze/DELETE /api/logs`, `GET /api/health`.
   - **Agents (`backend/app/agents/`):** `PlannerAgent`(`planner.py`), `WorkerAgent`(`worker.py`, 병렬 조회+실패 캐시), `NutritionValidatorAgent`(`validator.py`), `ResponderAgent`(`responder.py`), `LoggingSubAgent`(`logging_agent.py`), LangGraph 조립(`graph.py`).
   - **Tools (`backend/app/tools/`):** `base.py`(`http_get` 세션 풀), `nutrition_tool.py`, `price_tool.py`(TTL 캐시+에러 XML 방어+채널 필터), `local_tool.py`, `optimizer_tool.py`(모드 A/B/C+bulk 스왑+한국어 복합명사 매칭).
-  - **Frontend (`frontend/`):** 프로필 역산 사이드바(세션별 분리), 채팅+실행 타임라인(재계획 강조), 식단 계획 관리(로컬 날짜 기본값+세션 필터+CRUD), 실행 로그/F3020 이상 탐지 3탭 UI.
+  - **Frontend (`frontend/`):** 프로필 역산(예산·탄단지 표시 포함), 채팅+실행 타임라인(재계획 강조·품목별 `[1:1 교체]` 버튼), 식단 계획 관리(로컬 날짜 기본값+세션 필터+CRUD), 실행 로그/F3020 이상 탐지 3탭 UI.
 
 ---
 
@@ -78,7 +78,9 @@
 
 ## 4. 최근 마일스톤 로그 (최신 6건 유지)
 
-- **2026-11-18 (Audit Fixes #1~#15 Complete):** Ponytail 전수 감사 15건(Mode C/A 계산·스왑 후속 턴·XML 캐시 오염·정규식·매칭·병렬 조회·UTC 날짜·세션 격리·미사용 코드) 일괄 수정, 회귀 테스트 추가(`10 passed in 4.00s`), `AGENTS.md` 갱신 완료.
-- **2026-11-18 (Setup & Audit Baseline):** `AI_Project` 전수 감사 완료(Must 8 / Should 6 / Nice 1), 단일 기록 파일 `AGENTS.md` 신설, `.gitignore` WAL 패턴 추가, Git 초기화 및 로컬 커밋(`a60121d`) 완료.
-- **2026-11-18 (API Migration):** 네이버 쇼핑 API 제거 → 한국소비자원 XML(`B551919`) + Open Food Facts 2순위 연동, 식약처 `FoodNtrCpntDbInfo03` 스키마 정렬, 표준 모드명 통일.
-- **2026-11-18 (Initial Build):** SSAFY AI 코어 3회차 LangGraph 멀티 Agent 식단 플래너 초안(프로필 역산, 모드 A/B/C, 1:1 스왑, F3020 로깅·이상탐지, 분리형 Vanilla JS UI) 구축.
+- **2026-11-18 (Ponytail Whole-Repo Audit Fixes #1~#11):** `validator.py`(bulk 스왑 총액 검증), `planner.py`(프로필 우선 병합·비식단 모드 전환 시 맥락 보존), `plans.py`(세션별 중복 경고 격리), `price_tool.py`(가격 API 에러 XML 비캐싱·Mock 채널 정렬·카탈로그 단일 비행 락), `nutrition_tool.py`(실시간 현미 도시락 `main` 분류), `database.py`(WAL `init_db` 1회 설정), `worker.py`·`state.py`(키 누락 선실행 방지·미사용 상태 정리) 수정 및 회귀 테스트 보강(`11 passed in 3.07s`).
+- **2026-11-18 (Step 6 Integration & Log Samples):** `USE_MOCK=false` 무키 `MISSING_API_KEY` API 응답(`responder.py`, `chat.py`) 및 `tool_call_end` 출력 요약(`worker.py`) 보강, 대표 시나리오 5종+무키 검증(`11 passed`) 및 제출용 실행 로그 3종(`logs_sample/*.json`) 추출 완료.
+- **2026-11-18 (Step 4&5 UI & 5-Scenario Verification):** `backend/tests/test_scenarios.py`(대표 시나리오 5종 자동 검증+로그 요약 출력) 신설, `responder.py`(부분 Tool 실패 `worker_escalations` 사유 노출), `planner.py`·`frontend/`(프로필 예산·탄단지 표시 및 품목별 `[1:1 교체]` 버튼) 보강 (`11 passed in 4.90s`).
+- **2026-11-18 (Step 2&3 Compliance & Review Fixes #1~#5):** `optimizer_tool.py`(나트륨 1,500mg `HIGH_SODIUM` 검증, `maintain` 1.5g, ΔP·ΔK 스왑 근접 점수, M/F·별칭 호환, `_disliked_terms` 통합), `planner.py`(재계획 사유 분기 정확도·중복 제거), `worker.py`(`excluded_items` 동기화), `responder.py`(소액 `online_bulk` 대안 하한 보정) 수정 및 회귀 테스트 보강(`10 passed in 3.01s`).
+- **2026-11-18 (Audit Fixes #1~#15 Complete):** Ponytail 전수 감사 15건 일괄 수정, 회귀 테스트 추가(`10 passed in 4.00s`), `AGENTS.md` 갱신 완료.
+- **2026-11-18 (Setup & API Migration & Initial Build):** 네이버 쇼핑 제거 → 한국소비자원 XML(`B551919`)·Open Food Facts 2순위 연동, LangGraph 멀티 Agent 식단 플래너 구축·초기 커밋(`a60121d`) 완료.

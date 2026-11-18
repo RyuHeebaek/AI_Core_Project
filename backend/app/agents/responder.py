@@ -50,7 +50,8 @@ def responder_node(state: AgentState) -> dict[str, Any]:
     elif state.get("clarification_needed"):
         lines.append(state.get("clarification_question", "필요한 조건을 조금 더 구체적으로 입력해 주세요."))
     elif fatal := state.get("fatal_error"):
-        lines.append(f"요청을 처리할 수 없습니다: **{fatal.get('message')}**")
+        code = fatal.get("code") or "FATAL_ERROR"
+        lines.append(f"요청을 처리할 수 없습니다 ([{code}]): **{fatal.get('message')}**")
         if fatal.get("code") == "MISSING_API_KEY":
             lines.append("`.env` 파일에 해당 API 키를 설정하거나 `USE_MOCK=true`로 실행해 주세요.")
     else:
@@ -61,10 +62,20 @@ def responder_node(state: AgentState) -> dict[str, Any]:
 
         if not val.get("passed"):
             reasons = val.get("stage1_errors", []) + val.get("stage2_errors", [])
+            cons = state.get("constraints") or {}
             lines.append(f"제약 조건을 모두 충족하는 조합을 찾지 못했습니다 (재계획 {replan_count}/{max_replan}회).")
             if reasons:
                 lines.append("- 미충족 사유: " + "; ".join(reasons))
-            lines.append("예산 상한, 최소 단백질 기준 또는 기피/건강 제약을 일부 조정해 다시 요청해 주세요.")
+            alts: list[str] = []
+            if cons.get("budget_krw"):
+                cur_b = int(cons["budget_krw"])
+                sug_b = max(cur_b + 3000, int(round(cur_b * 1.5, -2))) if mode != "online_bulk" else max(cur_b + 10000, int(round(cur_b * 1.3, -3)))
+                alts.append(f"예산 상한 상향 ({cur_b:,}원 → 약 {sug_b:,}원 이상)")
+            if cons.get("min_meal_protein_g"):
+                cur_p = float(cons["min_meal_protein_g"])
+                alts.append(f"끼니당 최소 단백질 완화 ({cur_p:.0f}g → {max(15.0, cur_p * 0.8):.0f}g)")
+            alt_text = ", ".join(alts) if alts else "예산 상한, 최소 단백질 기준 또는 기피/건강 제약"
+            lines.append(f"- 조정 가능한 대안: {alt_text}으로 조정해 다시 요청해 주세요.")
         else:
             if rc := combo.get("reverse_calc"):
                 lines.extend(_format_reverse_calc(rc))
@@ -110,6 +121,11 @@ def responder_node(state: AgentState) -> dict[str, Any]:
                 for st in stores[:4]:
                     dist = f" ({st['distance_m']}m)" if st.get("distance_m") is not None else ""
                     lines.append(f"- **{st['name']}**{dist} — {st['address']} | {st['place_url']}")
+
+            if escalations := state.get("worker_escalations"):
+                lines.append("\n### 일부 보조 조회 제한 안내")
+                for esc in escalations:
+                    lines.append(f"- {esc.get('tool_name', 'Tool')}: {esc.get('reason', '조회 실패')} (나머지 식단 추천은 정상 완료)")
 
             if excluded := combo.get("excluded_candidates"):
                 lines.append("\n### 제외된 후보 및 사유")

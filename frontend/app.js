@@ -58,6 +58,7 @@ function getSessionId() {
 }
 
 function getProfilePayload() {
+  const budgetVal = document.getElementById("profBudget").value.trim();
   return {
     gender: document.getElementById("profGender").value,
     weight_kg: Number(document.getElementById("profWeight").value),
@@ -65,6 +66,7 @@ function getProfilePayload() {
     target_weeks: Number(document.getElementById("profWeeks").value),
     goal_type: document.getElementById("profGoal").value,
     meals_per_day: Number(document.getElementById("profMeals").value),
+    budget_krw: budgetVal ? Number(budgetVal) : null,
     lactose_free: document.getElementById("chkLactose").checked,
     low_sugar: document.getElementById("chkLowSugar").checked,
     no_caffeine_after_18: document.getElementById("chkNoCaff").checked,
@@ -125,7 +127,7 @@ document.getElementById("saveProfileBtn").addEventListener("click", async () => 
     const t = data.targets;
     box.innerHTML =
       `<div><strong>TDEE</strong>: ${t.tdee_kcal}kcal → <strong>일일 목표</strong>: ${t.target_daily_kcal}kcal</div>` +
-      `<div><strong>1끼</strong>: ${t.target_meal_kcal}kcal (단백질 ${t.meal_protein_g}g)</div>` +
+      `<div><strong>1끼</strong>: ${t.target_meal_kcal}kcal (단 ${t.meal_protein_g}g / 탄 ${t.meal_carbs_g}g / 지 ${t.meal_fat_g}g)</div>` +
       (t.guardrail_triggered ? `<div class="alert warn">${esc(t.guardrail_warning)}</div>` : "");
   } catch (err) {
     box.innerHTML = `<span style="color:#dc2626">${esc(err.message)}</span>`;
@@ -182,15 +184,29 @@ function renderTimeline(data) {
     (ar.diagnosis ? `<div>진단: ${esc(ar.diagnosis)}</div>` : "");
 }
 
-// 대화 전송
-document.getElementById("chatForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const input = document.getElementById("chatInput");
-  const msg = input.value.trim();
-  if (!msg) return;
-  input.value = "";
-  showBanner("chatErrorBanner", "");
+// 대화 전송 및 개별 품목 1:1 스왑
+function renderSwapBar(items) {
+  const bar = document.getElementById("comboSwapBar");
+  if (!items?.length) {
+    bar.classList.add("hidden");
+    bar.innerHTML = "";
+    return;
+  }
+  bar.innerHTML = items
+    .map(
+      (it) =>
+        `<button type="button" class="chip btn-swap-item" data-item="${esc(it.name)}">${esc(it.name)} [1:1 교체]</button>`
+    )
+    .join("");
+  bar.classList.remove("hidden");
+  bar.querySelectorAll(".btn-swap-item").forEach((btn) => {
+    btn.addEventListener("click", () => sendChatMessage(`${btn.dataset.item} 빼고 다른 걸로 바꿔줘`));
+  });
+}
 
+async function sendChatMessage(msg) {
+  if (!msg) return;
+  showBanner("chatErrorBanner", "");
   appendMessage("user", msg);
   const loadingEl = appendMessage("loading", "Agent가 계획을 수립하고 Tool을 실행 중입니다...");
   const sendBtn = document.getElementById("sendBtn");
@@ -217,8 +233,10 @@ document.getElementById("chatForm").addEventListener("submit", async (e) => {
     if (data.candidate_combo?.selected_items?.length && data.validation_result?.passed) {
       document.getElementById("planTitleInput").value = `모드${data.mode} 추천 식단`;
       document.getElementById("planDateInput").value = todayLocalDate();
+      renderSwapBar(data.candidate_combo.selected_items);
       saveBar.classList.remove("hidden");
     } else {
+      renderSwapBar([]);
       saveBar.classList.add("hidden");
     }
   } catch (err) {
@@ -227,6 +245,15 @@ document.getElementById("chatForm").addEventListener("submit", async (e) => {
   } finally {
     sendBtn.disabled = false;
   }
+}
+
+document.getElementById("chatForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const input = document.getElementById("chatInput");
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = "";
+  await sendChatMessage(msg);
 });
 
 // 계획 저장 (F3015: 같은 날짜 시간 겹침 경고 표시)

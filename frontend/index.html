@@ -68,6 +68,10 @@
               <input id="profMeals" type="number" min="1" max="6" value="3" />
             </div>
           </div>
+          <div class="field-row">
+            <label>예산 상한(원, 선택)</label>
+            <input id="profBudget" type="number" min="0" step="500" placeholder="예: 8000 또는 150000" />
+          </div>
           <div class="checks">
             <label><input type="checkbox" id="chkLactose" /> 유당불내증</label>
             <label><input type="checkbox" id="chkLowSugar" /> 저당(≤10g)</label>
@@ -87,6 +91,7 @@
           </div>
           <div id="chatErrorBanner" class="alert hidden"></div>
           <div id="chatMessages" class="chat-messages"></div>
+          <div id="comboSwapBar" class="quick-prompts hidden" style="margin-top:8px"></div>
           <div id="savePlanBox" class="save-plan-bar hidden">
             <input id="planTitleInput" type="text" placeholder="계획 제목 (예: 강남역 점심 고단백)" />
             <input id="planDateInput" type="date" />

@@ -93,6 +93,17 @@ def test_profile_guardrail_and_mode_c_math():
     assert extreme["target_daily_kcal"] == 1400.0
     assert extreme["recommended_weeks"] and extreme["recommended_weeks"] > 4
 
+    # 여성 M/F 별칭 및 maintain 1.5g/kg, safety_warning 확인
+    female_maint = calculate_profile_targets(
+        {"gender": "F", "current_weight": 60, "target_weight": 60, "duration_weeks": 4, "goal_type": "maintain", "meals_per_day": 3}
+    )
+    assert female_maint["daily_protein_g"] == 90.0
+    assert female_maint["safety_floor_kcal"] == 1100.0
+    female_ext = calculate_profile_targets(
+        {"gender": "F", "current_weight": 55, "target_weight": 42, "duration_weeks": 4, "goal_type": "diet"}
+    )
+    assert female_ext["guardrail_triggered"] is True and female_ext["safety_warning"]
+
     # 모드 C: 초과 칼로리 복구 + 최소 단백질 1.6g/kg 고정
     rec = calculate_mode_c_targets(excess_kcal=1200, remain_days=3, base_daily_kcal=2000, weight_kg=75, gender="male", meals_per_day=3)
     assert rec["target_daily_kcal"] == 1600.0
@@ -110,6 +121,22 @@ def test_validator_stage1_and_stage2():
     }
     ok1, errs1, _ = _stage1_deterministic(bad_lactose_combo, {"lactose_free": True, "budget_krw": 5000}, {}, "cvs_instant")
     assert ok1 is False and any("유당" in e for e in errs1)
+
+    high_sodium_combo = {
+        "selected_items": [
+            {"name": "고나트륨 닭가슴살", "category": "main", "kcal": 200, "protein_g": 28, "carbs_g": 4, "fat_g": 5, "sugar_g": 1, "sodium_mg": 1650, "unit_price_krw": 3000}
+        ]
+    }
+    ok_na, errs_na, _ = _stage1_deterministic(high_sodium_combo, {"budget_krw": 5000}, {}, "cvs_instant")
+    assert ok_na is False and any("HIGH_SODIUM" in e for e in errs_na)
+
+    bulk_swap_over = {
+        "selected_items": [{"name": "수비드 닭가슴살 100g", "category": "bulk_protein", "kcal": 108, "protein_g": 24, "carbs_g": 0.8, "fat_g": 1.1, "unit_price_krw": 3000}],
+        "total_price_krw": 180000,
+        "shopping_summary": {"type": "online_bulk"},
+    }
+    ok_bs, errs_bs, _ = _stage1_deterministic(bulk_swap_over, {"budget_krw": 150000}, {}, "item_swap")
+    assert ok_bs is False and any("BUDGET_EXCEEDED" in e for e in errs_bs)
 
     snack_as_main = {
         "selected_items": [
@@ -204,6 +231,8 @@ def test_chat_api_modes_memory_replan_and_swap():
     d_cap = r_cap.json()
     assert d_cap["validation_result"]["passed"] is False
     assert d_cap["replan_count"] == 3
+    assert "예산 상한 상향" in d_cap["reply"]
+    assert d_b["candidate_combo"]["excluded_items"] == d_b["candidate_combo"]["excluded_candidates"]
 
 
 def test_plans_crud_and_overlap_warning():
@@ -247,6 +276,23 @@ def test_plans_crud_and_overlap_warning():
     )
     assert p2.status_code == 201
     assert len(p2.json()["overlap_warnings"]) == 1
+
+    # 다른 세션(s2)은 같은 날짜/시간에 저장해도 s1 계획 제목을 경고로 노출하지 않음
+    p_other = client.post(
+        "/api/plans",
+        json={
+            "session_id": "s2",
+            "title": "타세션 식단",
+            "mode": "cvs_instant",
+            "plan_date": "2026-11-20",
+            "start_time": "12:15",
+            "end_time": "13:15",
+            "items": [],
+            "nutrition_summary": {},
+            "total_price_krw": 4000,
+        },
+    )
+    assert p_other.status_code == 201 and p_other.json()["overlap_warnings"] == []
 
     # PUT / PATCH 수정 & 삭제
     upd = client.put(f"/api/plans/{p1_id}", json={"title": "수정된 식단"})
@@ -638,3 +684,157 @@ def test_audit_regressions_parsers_matching_regex_and_cache(monkeypatch):
     assert res1["execution_trace"][0]["step"] == "tool_call"
     res2 = worker_node({**w_state, "shopping_cache": res1["shopping_cache"]})
     assert res2["execution_trace"][0]["step"] == "tool_cache_hit" and res2["execution_trace"][0]["ok"] is False
+
+    # Step 2&3 보강 회귀: no_caffeine_night/disliked_foods/excluded_items, item_swap ΔP·ΔK, replan 분기, responder 대안
+    from app.agents.planner import plan_node
+    from app.agents.responder import responder_node
+    from app.tools.optimizer_tool import optimize_meal_combo
+
+    pool_nut = [
+        {"food_id": "M1", "name": "스팀 닭가슴살 100g", "category": "main", "serving_g": 100.0, "kcal": 110.0, "protein_g": 23.0, "carbs_g": 1.0, "fat_g": 1.5, "sugar_g": 0.5, "sodium_mg": 320.0, "has_lactose": False, "has_caffeine": False},
+        {"food_id": "S_OLD", "name": "감동란 반숙 계란", "category": "sub", "serving_g": 100.0, "kcal": 140.0, "protein_g": 12.0, "carbs_g": 1.2, "fat_g": 9.6, "sugar_g": 0.5, "sodium_mg": 430.0, "has_lactose": False, "has_caffeine": False},
+        {"food_id": "S_NEAR", "name": "단백질 두부바", "category": "sub", "serving_g": 70.0, "kcal": 115.0, "protein_g": 12.0, "carbs_g": 4.0, "fat_g": 5.5, "sugar_g": 1.0, "sodium_mg": 260.0, "has_lactose": False, "has_caffeine": False},
+        {"food_id": "S_FAR", "name": "저칼로리 미니포", "category": "sub", "serving_g": 20.0, "kcal": 30.0, "protein_g": 4.0, "carbs_g": 2.0, "fat_g": 0.5, "sugar_g": 0.2, "sodium_mg": 80.0, "has_lactose": False, "has_caffeine": False},
+        {"food_id": "D_CAF", "name": "아이스 아메리카노", "category": "drink", "serving_g": 350.0, "kcal": 10.0, "protein_g": 0.5, "carbs_g": 2.0, "fat_g": 0.0, "sugar_g": 0.0, "sodium_mg": 10.0, "has_lactose": False, "has_caffeine": True},
+        {"food_id": "D_SOY", "name": "무가당 두유", "category": "drink", "serving_g": 190.0, "kcal": 95.0, "protein_g": 9.5, "carbs_g": 3.0, "fat_g": 5.0, "sugar_g": 1.2, "sodium_mg": 110.0, "has_lactose": False, "has_caffeine": False},
+    ]
+    pool_shop = [
+        {"product_id": "P1", "title": "스팀 닭가슴살 100g 1팩", "unit_price_krw": 2900, "bundle_price_krw": 2900, "pack_count": 1, "unit_weight_g": 100.0, "servings_per_purchase": 1.0, "unit_basis": "1팩", "mall_name": "CU", "link": "http://1"},
+        {"product_id": "P2", "title": "감동란 반숙 계란 1팩", "unit_price_krw": 2400, "bundle_price_krw": 2400, "pack_count": 1, "unit_weight_g": 100.0, "servings_per_purchase": 1.0, "unit_basis": "1팩", "mall_name": "CU", "link": "http://2"},
+        {"product_id": "P3", "title": "단백질 두부바 70g 1개", "unit_price_krw": 2500, "bundle_price_krw": 2500, "pack_count": 1, "unit_weight_g": 70.0, "servings_per_purchase": 1.0, "unit_basis": "1개", "mall_name": "CU", "link": "http://3"},
+        {"product_id": "P6", "title": "저칼로리 미니포 20g 1개", "unit_price_krw": 500, "bundle_price_krw": 500, "pack_count": 1, "unit_weight_g": 20.0, "servings_per_purchase": 1.0, "unit_basis": "1개", "mall_name": "CU", "link": "http://6"},
+        {"product_id": "P4", "title": "아이스 아메리카노 350ml 1병", "unit_price_krw": 2000, "bundle_price_krw": 2000, "pack_count": 1, "unit_weight_g": 350.0, "servings_per_purchase": 1.0, "unit_basis": "1병", "mall_name": "CU", "link": "http://4"},
+        {"product_id": "P5", "title": "무가당 두유 190ml 1팩", "unit_price_krw": 1600, "bundle_price_krw": 1600, "pack_count": 1, "unit_weight_g": 190.0, "servings_per_purchase": 1.0, "unit_basis": "1팩", "mall_name": "CU", "link": "http://5"},
+    ]
+    opt_filtered = optimize_meal_combo(
+        mode="cvs_instant",
+        nutrition_items=pool_nut,
+        shopping_products=pool_shop,
+        constraints={"budget_krw": 8000, "no_caffeine_night": True, "disliked_foods": ["두부바"]},
+    )
+    assert opt_filtered["ok"] is True
+    assert opt_filtered["data"]["excluded_items"]
+    names_picked = [i["name"] for i in opt_filtered["data"]["selected_items"]]
+    assert not any("아메리카노" in n or "두부바" in n for n in names_picked)
+
+    # ΔP·ΔK 근접 스왑: 가성비(8.0g/천원)만 높은 미니포(4g) 대신 기존 계란(12g, 140kcal)과 가까운 두부바(12g, 115kcal) 선택
+    prev_for_swap = {
+        "selected_items": [
+            {**pool_nut[0], "unit_price_krw": 2900},
+            {**pool_nut[1], "unit_price_krw": 2400},
+        ],
+        "shopping_summary": {"type": "convenience_checklist"},
+    }
+    swapped = optimize_meal_combo(
+        mode="item_swap",
+        nutrition_items=pool_nut,
+        shopping_products=pool_shop,
+        constraints={"budget_krw": 8000},
+        base_conditions={"swap_target": "계란"},
+        previous_combo=prev_for_swap,
+    )
+    assert swapped["ok"] is True and swapped["data"]["swapped_to"] == "단백질 두부바"
+
+    # 재계획 분기: 일반 NO_FEASIBLE_COMBO 문구("예산/단백질/...")는 default 분기를 타고, HIGH_SODIUM만 저나트륨 분기 사용
+    p_default = plan_node({
+        "session_id": "s_p1", "run_id": "r1", "mode": "cvs_instant", "replan_count": 0, "max_replan": 3,
+        "validation_result": {"passed": False, "stage1_errors": ["추천 가능한 식단 품목 조합이 없습니다."]},
+        "worker_escalations": [{"reason": "예산/단백질/열량/건강 제약 조건을 동시에 만족하는 조합을 찾지 못했습니다."}],
+    })
+    assert any(t["args"].get("query") == "샐러드" for t in p_default["task_list"] if t["tool_name"] == "search_nutrition_db")
+
+    p_sodium = plan_node({
+        "session_id": "s_p2", "run_id": "r2", "mode": "online_bulk", "replan_count": 0, "max_replan": 3,
+        "validation_result": {"passed": False, "stage1_errors": ["HIGH_SODIUM: 나트륨 상한 초과"]},
+    })
+    assert any(t["args"].get("query") == "요거트" for t in p_sodium["task_list"] if t["tool_name"] == "search_nutrition_db")
+
+    # 소액 online_bulk 실패 시 0원이 아닌 상향 예산 대안 제시
+    resp_bulk = responder_node({
+        "session_id": "s_r1", "run_id": "r3", "mode": "online_bulk",
+        "constraints": {"budget_krw": 300},
+        "validation_result": {"passed": False, "stage1_errors": ["BUDGET_EXCEEDED: 예산 초과"]},
+        "replan_count": 3, "max_replan": 3,
+    })
+    assert "약 10,300원 이상" in resp_bulk["final_response"]
+
+    # Audit Fixes #2, #3, #5, #6, #7 회귀 검증
+    from app.agents.planner import analyze_node
+    from app.main import app
+    from app.tools.nutrition_tool import _infer_food_category
+    from app.tools.price_tool import clear_price_caches, search_product_price
+
+    # #6: 실시간 품목명에 "현미"와 "도시락"이 함께 있으면 bulk_carb가 아닌 main으로 분류
+    assert _infer_food_category("닭가슴살 현미 도시락") == "main"
+
+    # #7: display=2에서도 Mock 카탈로그 앞쪽 bulk 항목 때문에 cvs 항목이 잘리지 않음
+    p_cvs_small = search_product_price("닭가슴살", mode="cvs_instant", display=2)
+    assert p_cvs_small["ok"] is True and all(p["retail_type"] == "cvs" for p in p_cvs_small["data"]["products"])
+
+    # #2, #3: PUT /api/profiles 갱신(lactose_free 해제·체중 변경)이 과거 session_contexts를 이기고, general_chat이 맥락을 지우지 않음
+    client = TestClient(app)
+    client.put("/api/profiles/s_ctx", json={"gender": "male", "weight_kg": 75, "target_weight_kg": 70, "target_weeks": 4, "goal_type": "diet", "meals_per_day": 3, "lactose_free": True})
+    r_ctx1 = client.post("/api/chat", json={"session_id": "s_ctx", "message": "강남역 근처 편의점 8000원 이하 고단백 한끼 추천해줘"})
+    assert r_ctx1.json()["validation_result"]["passed"] is True
+    r_greet = client.post("/api/chat", json={"session_id": "s_ctx", "message": "안녕"})
+    assert r_greet.json()["mode"] == "general_chat"
+    client.put("/api/profiles/s_ctx", json={"gender": "male", "weight_kg": 70, "target_weight_kg": 66, "target_weeks": 4, "goal_type": "diet", "meals_per_day": 3, "lactose_free": False})
+    analyzed = analyze_node({"session_id": "s_ctx", "run_id": "r_ctx2", "user_message": "저당으로 다시 추천해줘"})
+    assert analyzed["profile"]["weight_kg"] == 70
+    assert not analyzed["constraints"].get("lactose_free")
+    assert analyzed["base_conditions"].get("location") == "강남역"
+    assert analyzed["constraints"].get("budget_krw") == 8000
+
+    # #5, #8: getProductPriceInfoSvc의 HTTP 200 에러 XML 비캐싱 & 동시 콜드스타트 시 카탈로그 1회만 다운로드
+    clear_price_caches()
+    monkeypatch.setenv("DATA_GO_KR_API_KEY", "test-key")
+    monkeypatch.setenv("USE_MOCK", "false")
+    price_calls = {"n": 0}
+    goods_calls = {"n": 0}
+
+    class _FakePriceResp:
+        def __init__(self, xml_text: str):
+            self.content = xml_text.encode("utf-8")
+
+        def raise_for_status(self):
+            return None
+
+    def fake_price_get(url, **kwargs):
+        if "getProductInfoSvc.do" in url:
+            goods_calls["n"] += 1
+            return _FakePriceResp("<response><result><item><goodId>G400</goodId><goodName>스팀 닭가슴살 100g 1팩</goodName></item></result></response>")
+        if "getStoreInfoSvc.do" in url:
+            return _FakePriceResp("<response><result><item><entpId>E1</entpId><entpName>CU</entpName><entpTypeCode>CS</entpTypeCode></item></result></response>")
+        if "getProductPriceInfoSvc" in url:
+            price_calls["n"] += 1
+            if price_calls["n"] == 1:
+                return _FakePriceResp("<OpenAPI_ServiceResponse><cmmMsgHeader><returnReasonCode>22</returnReasonCode><returnAuthMsg>LIMITED</returnAuthMsg></cmmMsgHeader></OpenAPI_ServiceResponse>")
+            return _FakePriceResp("<response><result><item><goodId>G400</goodId><entpId>E1</entpId><goodPrice>2900</goodPrice></item></result></response>")
+        raise AssertionError(f"Unexpected URL: {url}")
+
+    monkeypatch.setattr("requests.get", fake_price_get)
+    from concurrent.futures import ThreadPoolExecutor
+    from app.tools.price_tool import _load_consumer_goods
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        list(pool.map(lambda _: _load_consumer_goods("https://mock.local", "test-key"), range(4)))
+    assert goods_calls["n"] == 1
+
+    r_err = search_product_price("닭가슴살", mode="cvs_instant")
+    assert r_err["ok"] is False and r_err["error"]["code"] == "API_ERROR"
+    r_ok = search_product_price("닭가슴살", mode="cvs_instant")
+    assert r_ok["ok"] is True and r_ok["data"]["products"][0]["unit_price_krw"] == 2900
+
+    # #8: DATA_GO_KR_API_KEY 누락 + USE_MOCK=false 시 병렬 prefetch가 Kakao 호출까지 실행하지 않고 즉시 중단
+    monkeypatch.setenv("DATA_GO_KR_API_KEY", "")
+    monkeypatch.setenv("KAKAO_REST_API_KEY", "kakao-only")
+    kakao_hit = {"n": 0}
+    monkeypatch.setattr("requests.get", lambda url, **kwargs: kakao_hit.__setitem__("n", kakao_hit["n"] + 1))
+    w_no_key = worker_node({
+        "session_id": "s_w_nokey", "run_id": "rnk", "worker_llm_enabled": False,
+        "task_list": [
+            {"task_id": "t1", "tool_name": "search_nutrition_db", "args": {"query": "닭가슴살"}, "fixed_args": [], "depends_on": []},
+            {"task_id": "t2", "tool_name": "search_nearby_store", "args": {"location": "강남역"}, "fixed_args": ["location"], "depends_on": []},
+        ],
+    })
+    assert w_no_key["fatal_error"]["code"] == "MISSING_API_KEY" and kakao_hit["n"] == 0
