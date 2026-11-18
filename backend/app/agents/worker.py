@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from app.agents.llm_client import safe_llm_json
@@ -11,7 +12,7 @@ from app.config import get_settings
 from app.events.event_bus import AgentEvent, event_bus
 from app.models.state import AgentState
 from app.tools import TOOL_REGISTRY
-from app.tools.base import FATAL_OR_CLARIFY_CODES, RETRYABLE_ERROR_CODES
+from app.tools.base import FATAL_OR_CLARIFY_CODES, RETRYABLE_ERROR_CODES, ErrorCode
 
 
 def _cache_key(tool_name: str, args: dict[str, Any]) -> str:
@@ -46,14 +47,141 @@ def _decide_retry_args(
         return "ESCALATE", None, True, parsed.get("reason", "LLM 재계획 요청")
 
     # LLM 미설정 환경(오프라인 테스트)용 규칙 fallback — llm_called는 실제 호출 여부 그대로 유지
-    fallback_query = "닭가슴살" if tool_name == "search_nutrition_db" else "닭가슴살 100g 10팩"
+    fallback_query = "닭가슴살" if tool_name == "search_nutrition_db" else "계란"
     if fallback_query != args["query"]:
         return "RETRY", {**args, "query": fallback_query}, called, "대체 기본 키워드로 보정 재시도"
     return "ESCALATE", None, called, "대체 검색어 소진으로 Planner 재계획 요청"
 
 
+_TRANSIENT_ERROR_CODES = frozenset({ErrorCode.API_TIMEOUT, ErrorCode.API_ERROR, ErrorCode.MISSING_API_KEY})
+
+
+def _logged_args(tool_name: str, current_args: dict[str, Any]) -> dict[str, Any]:
+    if tool_name != "optimize_meal_combo":
+        return current_args
+    return {
+        "mode": current_args.get("mode"),
+        "nutrition_count": len(current_args.get("nutrition_items") or []),
+        "shopping_count": len(current_args.get("shopping_products") or []),
+        "constraints": current_args.get("constraints"),
+    }
+
+
+def _execute_uncached_task(
+    session_id: str,
+    run_id: str,
+    task_id: str,
+    tool_name: str,
+    spec: Any,
+    args: dict[str, Any],
+    fixed_args: list[str],
+    max_retry: int,
+    worker_llm_enabled: bool,
+) -> dict[str, Any]:
+    attempt = 0
+    current_args = args
+    events_out: list[AgentEvent] = []
+    traces_out: list[dict[str, Any]] = []
+    llm_delta = 0
+    fatal_err: dict[str, Any] | None = None
+    escalation: dict[str, Any] | None = None
+    cacheable = False
+
+    while True:
+        t0 = time.perf_counter()
+        events_out.append(
+            AgentEvent(
+                session_id,
+                run_id,
+                "tool_call_start",
+                "WorkerAgent",
+                "worker_execute",
+                {
+                    "tool_name": tool_name,
+                    "args": _logged_args(tool_name, current_args),
+                    "is_retry": attempt > 0,
+                },
+            )
+        )
+        result = spec.fn(**current_args)
+        elapsed_ms = round((time.perf_counter() - t0) * 1000, 1)
+        events_out.append(
+            AgentEvent(
+                session_id,
+                run_id,
+                "tool_call_end",
+                "WorkerAgent",
+                "worker_execute",
+                {
+                    "tool_name": tool_name,
+                    "ok": result["ok"],
+                    "error": result.get("error"),
+                    "elapsed_ms": elapsed_ms,
+                    "is_retry": attempt > 0,
+                },
+            )
+        )
+        traces_out.append(
+            {
+                "step": "tool_call",
+                "tool_name": tool_name,
+                "ok": result["ok"],
+                "elapsed_ms": elapsed_ms,
+                "is_retry": attempt > 0,
+                "error_code": (result.get("error") or {}).get("code"),
+            }
+        )
+
+        if result["ok"]:
+            cacheable = True
+            break
+
+        err_obj = result.get("error") or {}
+        err_code = err_obj.get("code", "")
+
+        # F3021: 치명적 오류나 모호한 지역은 LLM 호출 없이 즉시 중단/전달
+        if err_code in FATAL_OR_CLARIFY_CODES:
+            fatal_err = {"code": err_code, "message": err_obj.get("message", ""), "tool_name": tool_name}
+            break
+
+        if err_code in RETRYABLE_ERROR_CODES and worker_llm_enabled and attempt < max_retry:
+            action, new_args, llm_called, dec_reason = _decide_retry_args(
+                tool_name, current_args, fixed_args, err_code, err_obj.get("message", "")
+            )
+            if llm_called:
+                llm_delta += 1
+            events_out.append(
+                AgentEvent(
+                    session_id,
+                    run_id,
+                    "llm_decision",
+                    "WorkerAgent",
+                    "worker_execute",
+                    {"tool_name": tool_name, "action": action, "reason": dec_reason, "llm_called": llm_called},
+                )
+            )
+            if action == "RETRY" and new_args is not None:
+                attempt += 1
+                current_args = new_args
+                continue
+
+        cacheable = err_code not in _TRANSIENT_ERROR_CODES
+        escalation = {"task_id": task_id, "tool_name": tool_name, "reason": err_obj.get("message", "Tool 실패")}
+        break
+
+    return {
+        "result": result,
+        "events": events_out,
+        "traces": traces_out,
+        "llm_delta": llm_delta,
+        "fatal_error": fatal_err,
+        "escalation": escalation,
+        "cacheable": cacheable,
+    }
+
+
 def worker_node(state: AgentState) -> dict[str, Any]:
-    """Planner의 task_list를 순차 실행하고 앞선 Tool 출력을 다음 Tool 입력으로 연결한다."""
+    """Planner의 task_list를 실행하고 독립 조회 Tool은 병렬로 선실행해 앞선 Tool 출력을 연결한다."""
     session_id = state["session_id"]
     run_id = state["run_id"]
     task_list = state.get("task_list", [])
@@ -76,6 +204,41 @@ def worker_node(state: AgentState) -> dict[str, Any]:
     fatal_error = state.get("fatal_error")
 
     event_bus.publish(AgentEvent(session_id, run_id, "node_enter", "WorkerAgent", "worker_execute", {"task_count": len(task_list)}))
+
+    # 독립 read-only 조회 태스크(depends_on == []) 중 캐시 미스 항목을 병렬 선실행
+    prefetch_jobs: dict[str, tuple[str, Any, dict[str, Any], list[str], str]] = {}
+    for task in task_list:
+        tool_name = task["tool_name"]
+        if task.get("depends_on") or tool_name not in caches:
+            continue
+        spec = TOOL_REGISTRY.get(tool_name)
+        args = dict(task.get("args", {}))
+        cache = caches[tool_name]
+        ckey = _cache_key(tool_name, args)
+        if spec and ckey not in cache and ckey not in prefetch_jobs:
+            prefetch_jobs[ckey] = (task["task_id"], spec, args, list(task.get("fixed_args", [])), tool_name)
+
+    prefetched: dict[str, dict[str, Any]] = {}
+    if len(prefetch_jobs) > 1:
+        keys = list(prefetch_jobs.keys())
+        with ThreadPoolExecutor(max_workers=min(4, len(keys))) as pool:
+            outcomes = list(
+                pool.map(
+                    lambda k: _execute_uncached_task(
+                        session_id,
+                        run_id,
+                        prefetch_jobs[k][0],
+                        prefetch_jobs[k][4],
+                        prefetch_jobs[k][1],
+                        prefetch_jobs[k][2],
+                        prefetch_jobs[k][3],
+                        max_retry,
+                        worker_llm_enabled,
+                    ),
+                    keys,
+                )
+            )
+        prefetched = dict(zip(keys, outcomes))
 
     collected_nutrition: list[dict[str, Any]] = []
     collected_shopping: list[dict[str, Any]] = []
@@ -114,90 +277,28 @@ def worker_node(state: AgentState) -> dict[str, Any]:
             )
             trace.append({"step": "tool_cache_hit", "tool_name": tool_name, "ok": result["ok"]})
         else:
-            attempt = 0
-            current_args = args
-            result = None
-            while True:
-                t0 = time.perf_counter()
-                event_bus.publish(
-                    AgentEvent(
-                        session_id,
-                        run_id,
-                        "tool_call_start",
-                        "WorkerAgent",
-                        "worker_execute",
-                        {
-                            "tool_name": tool_name,
-                            "args": current_args if tool_name != "optimize_meal_combo" else {"mode": current_args.get("mode")},
-                            "is_retry": attempt > 0,
-                        },
-                    )
-                )
-                result = spec.fn(**current_args)
-                elapsed_ms = round((time.perf_counter() - t0) * 1000, 1)
-                event_bus.publish(
-                    AgentEvent(
-                        session_id,
-                        run_id,
-                        "tool_call_end",
-                        "WorkerAgent",
-                        "worker_execute",
-                        {
-                            "tool_name": tool_name,
-                            "ok": result["ok"],
-                            "error": result.get("error"),
-                            "elapsed_ms": elapsed_ms,
-                            "is_retry": attempt > 0,
-                        },
-                    )
-                )
-                trace.append(
-                    {
-                        "step": "tool_call",
-                        "tool_name": tool_name,
-                        "ok": result["ok"],
-                        "elapsed_ms": elapsed_ms,
-                        "is_retry": attempt > 0,
-                        "error_code": (result.get("error") or {}).get("code"),
-                    }
-                )
-
-                if result["ok"]:
-                    if cache is not None:
-                        cache[ckey] = result
-                    break
-
-                err_obj = result.get("error") or {}
-                err_code = err_obj.get("code", "")
-
-                # F3021: 치명적 오류나 모호한 지역은 LLM 호출 없이 즉시 중단/전달
-                if err_code in FATAL_OR_CLARIFY_CODES:
-                    fatal_error = {"code": err_code, "message": err_obj.get("message", ""), "tool_name": tool_name}
-                    break
-
-                if err_code in RETRYABLE_ERROR_CODES and worker_llm_enabled and attempt < max_retry:
-                    action, new_args, llm_called, dec_reason = _decide_retry_args(
-                        tool_name, current_args, fixed_args, err_code, err_obj.get("message", "")
-                    )
-                    if llm_called:
-                        llm_calls += 1
-                    event_bus.publish(
-                        AgentEvent(
-                            session_id,
-                            run_id,
-                            "llm_decision",
-                            "WorkerAgent",
-                            "worker_execute",
-                            {"tool_name": tool_name, "action": action, "reason": dec_reason, "llm_called": llm_called},
-                        )
-                    )
-                    if action == "RETRY" and new_args is not None:
-                        attempt += 1
-                        current_args = new_args
-                        continue
-
-                escalations.append({"task_id": task["task_id"], "tool_name": tool_name, "reason": err_obj.get("message", "Tool 실패")})
-                break
+            outcome = prefetched.get(ckey) or _execute_uncached_task(
+                session_id,
+                run_id,
+                task["task_id"],
+                tool_name,
+                spec,
+                args,
+                fixed_args,
+                max_retry,
+                worker_llm_enabled,
+            )
+            for ev in outcome["events"]:
+                event_bus.publish(ev)
+            trace.extend(outcome["traces"])
+            llm_calls += outcome["llm_delta"]
+            result = outcome["result"]
+            if outcome["fatal_error"]:
+                fatal_error = outcome["fatal_error"]
+            if outcome["escalation"]:
+                escalations.append(outcome["escalation"])
+            if cache is not None and outcome["cacheable"]:
+                cache[ckey] = result
 
         worker_results[tool_name] = result
         if fatal_error:

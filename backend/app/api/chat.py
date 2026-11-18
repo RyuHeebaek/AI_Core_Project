@@ -56,6 +56,7 @@ def chat_endpoint(req: ChatRequest) -> ChatResponse:
         save_profile(req.session_id, final_state["profile"])
     ctx_to_save: dict[str, Any] = {
         "mode": final_state.get("mode", "cvs_instant"),
+        "base_mode": final_state.get("base_mode", "cvs_instant"),
         "profile": final_state.get("profile", {}),
         "base_conditions": final_state.get("base_conditions", {}),
         "preferences": {

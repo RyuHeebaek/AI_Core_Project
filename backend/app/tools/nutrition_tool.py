@@ -8,14 +8,13 @@ import requests
 from pydantic import BaseModel, Field
 
 from app.config import get_settings
-from app.tools.base import ErrorCode, err, ok, safe_tool
+from app.tools.base import ErrorCode, err, http_get, ok, safe_tool
 
 
 class NutritionSearchInput(BaseModel):
     """영양성분 DB 조회 입력 스키마."""
 
     query: str = Field(..., min_length=1, description="검색할 식품명 또는 핵심 키워드 (예: '닭가슴살', '삶은계란')")
-    serving_base_g: float = Field(default=100.0, gt=0, description="조회 기준 중량(g), 미지정 시 기본 100g")
     limit: int = Field(default=8, ge=1, le=20, description="최대 반환 품목 수")
 
 
@@ -214,7 +213,7 @@ def _parse_api_item(raw: dict[str, Any]) -> tuple[dict[str, Any] | None, str | N
     }, None
 
 
-def _search_mock(query: str, serving_base_g: float, limit: int) -> dict[str, Any]:
+def _search_mock(query: str, limit: int) -> dict[str, Any]:
     q = query.strip().lower()
     tokens = [t for t in q.replace(",", " ").split() if t]
     verified: list[dict[str, Any]] = []
@@ -223,6 +222,9 @@ def _search_mock(query: str, serving_base_g: float, limit: int) -> dict[str, Any
     for row in _MOCK_FOOD_DB:
         haystack = " ".join([row["name"], row["category"], *row["tags"]]).lower()
         if not all(tok in haystack for tok in tokens):
+            continue
+        if row.get("category") == "snack":
+            excluded.append({"name": row["name"], "reason": "과자/빵/디저트류 제외"})
             continue
         if row["kcal"] is None or row["protein_g"] is None:
             excluded.append({"name": row["name"], "reason": "MISSING_NUTRIENT_FIELDS: 열량/단백질 정보 없음(임의 채움 금지)"})
@@ -240,7 +242,6 @@ def _search_mock(query: str, serving_base_g: float, limit: int) -> dict[str, Any
     return ok(
         {
             "requested_query": query,
-            "serving_base_g": serving_base_g,
             "items": verified,
             "excluded_unverified": excluded,
             "source_mode": "mock_fallback",
@@ -251,7 +252,7 @@ def _search_mock(query: str, serving_base_g: float, limit: int) -> dict[str, Any
 
 
 @safe_tool
-def search_nutrition_db(query: str, serving_base_g: float = 100.0, limit: int = 8) -> dict[str, Any]:
+def search_nutrition_db(query: str, limit: int = 8) -> dict[str, Any]:
     """식약처 식품영양성분 DB API로 식품의 열량·탄단지·당류·나트륨을 조회한다."""
     if not query or not query.strip():
         return err(ErrorCode.INVALID_INPUT, "검색어(query)가 비어 있습니다.")
@@ -259,11 +260,11 @@ def search_nutrition_db(query: str, serving_base_g: float = 100.0, limit: int = 
     settings = get_settings()
     if not settings.data_go_kr_api_key:
         if settings.use_mock:
-            return _search_mock(query, serving_base_g, limit)
+            return _search_mock(query, limit)
         return err(ErrorCode.MISSING_API_KEY, "DATA_GO_KR_API_KEY가 설정되지 않았습니다.")
 
     try:
-        resp = requests.get(
+        resp = http_get(
             settings.nutrition_api_url,
             params={
                 "serviceKey": settings.data_go_kr_api_key,
@@ -277,9 +278,9 @@ def search_nutrition_db(query: str, serving_base_g: float = 100.0, limit: int = 
         resp.raise_for_status()
         payload = resp.json()
     except requests.Timeout:
-        return _search_mock(query, serving_base_g, limit) if settings.use_mock else err(ErrorCode.API_TIMEOUT, "식약처 API 응답 시간 초과")
+        return _search_mock(query, limit) if settings.use_mock else err(ErrorCode.API_TIMEOUT, "식약처 API 응답 시간 초과")
     except Exception:
-        return _search_mock(query, serving_base_g, limit) if settings.use_mock else err(ErrorCode.API_ERROR, "식약처 API 호출 실패")
+        return _search_mock(query, limit) if settings.use_mock else err(ErrorCode.API_ERROR, "식약처 API 호출 실패")
 
     body = payload.get("body", payload)
     raw_items = body.get("items", [])
@@ -293,20 +294,22 @@ def search_nutrition_db(query: str, serving_base_g: float = 100.0, limit: int = 
     for raw in raw_items:
         parsed, reason = _parse_api_item(raw)
         if parsed:
-            verified.append(parsed)
+            if parsed.get("category") == "snack":
+                excluded.append({"name": parsed["name"], "reason": "과자/빵/디저트류 제외"})
+            else:
+                verified.append(parsed)
         elif reason:
             excluded.append({"name": raw.get("FOOD_NM_KR", "unknown"), "reason": reason})
 
     if not verified:
         if settings.use_mock:
-            return _search_mock(query, serving_base_g, limit)
+            return _search_mock(query, limit)
         code = ErrorCode.MISSING_NUTRIENT_FIELDS if excluded else ErrorCode.NO_NUTRITION_DATA
         return err(code, f"'{query}'에 대한 유효한 영양성분 데이터를 찾지 못했습니다.")
 
     return ok(
         {
             "requested_query": query,
-            "serving_base_g": serving_base_g,
             "items": verified,
             "excluded_unverified": excluded,
             "source_mode": "live",

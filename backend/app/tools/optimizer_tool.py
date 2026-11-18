@@ -16,8 +16,7 @@ _UNIT_TOKEN_RE = re.compile(r"^\d+(?:\.\d+)?(?:kg|g|ml|l|팩|봉|개|병|캔|입
 _GENERIC_MATCH_WORDS = frozenset(
     {
         "오리지널", "플레인", "무가당", "언스위트", "편의점", "대용량", "기준가",
-        "스팀", "훈제", "구운", "반숙", "수비드", "즉석", "저당", "고단백",
-        "다이어트", "약", "한판", "한봉", "블랙페퍼", "아이스", "매일", "허닭", "아임닭",
+        "저당", "고단백", "다이어트", "약", "한판", "한봉", "아이스", "매일", "허닭", "아임닭",
     }
 )
 
@@ -217,19 +216,23 @@ def _merge_nutrition_and_price(
         n_name = n_item["name"]
         n_tokens = _food_noun_tokens(n_name)
         best_prod = None
-        best_overlap = 0
+        best_score = (0, -999)
         for prod in shopping_products:
             p_tokens = _food_noun_tokens(prod["title"])
-            # 정확한 핵심 식품명 교집합 또는 복합어 포함(예: "현미"+"곤약밥", "계란" in "구운계란")만 허용
-            overlap = sum(
-                1 for nt in n_tokens
-                if nt in p_tokens or any(nt in pt or pt in nt for pt in p_tokens)
+            exact = len(n_tokens & p_tokens)
+            # 한국어 수식 복합어는 뒤 명사가 일치할 때만 허용(예: "계란"↔"구운계란", "두부"↔"찌개두부"; "두부"↔"두부바" 차단)
+            suffix = sum(
+                1 for nt in (n_tokens - p_tokens)
+                if any(pt.endswith(nt) or nt.endswith(pt) for pt in p_tokens)
             )
-            if overlap > best_overlap:
-                best_overlap = overlap
+            if exact == 0 and suffix == 0:
+                continue
+            score = (exact * 10 + suffix * 2, -len(p_tokens - n_tokens))
+            if score > best_score:
+                best_score = score
                 best_prod = prod
 
-        if not best_prod or best_overlap == 0:
+        if not best_prod:
             excluded.append({"name": n_name, "reason": "단가 정보 매칭 불가로 조합 후보에서 제외"})
             continue
 
@@ -361,6 +364,48 @@ def check_meal_constraints(
     return errors
 
 
+def _scale_serving_qty(item: dict[str, Any], qty: int) -> dict[str, Any]:
+    if qty <= 1:
+        return item
+    scaled = {**item, "name": f"{item['name']} ({qty}회분)", "servings_per_meal": qty}
+    for key in ("serving_g", "kcal", "protein_g", "carbs_g", "fat_g", "sugar_g", "sodium_mg"):
+        if scaled.get(key) is not None:
+            scaled[key] = round(float(scaled[key]) * qty, 1)
+    scaled["unit_price_krw"] = int(scaled["unit_price_krw"]) * qty
+    return compute_item_metrics(scaled)
+
+
+def _build_bulk_orders(
+    combo_items: list[dict[str, Any]],
+    base_conditions: dict[str, Any],
+) -> tuple[list[dict[str, Any]], int, int, int]:
+    weeks = int(base_conditions.get("period_weeks") or 4)
+    meals_per_day = int(base_conditions.get("meals_per_day") or 2)
+    total_meals = max(1, int(base_conditions.get("total_meals") or weeks * 7 * meals_per_day))
+    line_orders: list[dict[str, Any]] = []
+    checkout_total = 0
+    for item in combo_items:
+        qty_per_meal = int(item.get("servings_per_meal") or 1)
+        servings_per_box = float(item.get("servings_per_purchase") or 1.0)
+        boxes = math.ceil((total_meals * qty_per_meal) / servings_per_box)
+        cost = boxes * int(item["bundle_price_krw"])
+        checkout_total += cost
+        line_orders.append(
+            {
+                "name": item["name"],
+                "product_title": item["product_title"],
+                "boxes_needed": boxes,
+                "servings_per_box": servings_per_box,
+                "servings_per_meal": qty_per_meal,
+                "bundle_price_krw": item["bundle_price_krw"],
+                "line_total_krw": cost,
+                "unit_price_krw": item["unit_price_krw"],
+                "link": item["link"],
+            }
+        )
+    return line_orders, checkout_total, weeks, total_meals
+
+
 def _optimize_mode_a(
     items: list[dict[str, Any]],
     constraints: dict[str, Any],
@@ -368,15 +413,14 @@ def _optimize_mode_a(
     preferences: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any] | None, list[dict[str, str]]]:
     """모드 A: 설정 기간(총 끼니 수) 예산 내 온라인 대량 장바구니 포트폴리오 탐색."""
-    weeks = int(base_conditions.get("period_weeks") or 4)
-    meals_per_day = int(base_conditions.get("meals_per_day") or 2)
-    total_meals = max(1, int(base_conditions.get("total_meals") or weeks * 7 * meals_per_day))
     total_budget = int(constraints.get("budget_krw") or 250000)
 
-    proteins = [i for i in items if i.get("category") in {"bulk_protein", "main", "drink"}]
+    proteins = [i for i in items if i.get("category") in {"bulk_protein", "main"}]
+    if not proteins:
+        proteins = [i for i in items if i.get("category") == "drink" and float(i.get("protein_g") or 0) >= 5.0]
     carbs = [i for i in items if i.get("category") in {"bulk_carb", "sub"}]
     if not proteins:
-        proteins = items
+        proteins = [i for i in items if i.get("category") != "snack"]
 
     best_portfolio = None
     best_score = -1e9
@@ -384,55 +428,41 @@ def _optimize_mode_a(
 
     pairs = list(itertools.product(proteins, carbs)) if carbs else [(p, None) for p in proteins]
     for p_item, c_item in pairs:
-        combo_items = [p_item] + ([c_item] if c_item else [])
-        summary = summarize_combo(combo_items)
-        line_orders = []
-        checkout_total = 0
-        for item in combo_items:
-            servings_per_box = float(item.get("servings_per_purchase") or 1.0)
-            boxes = math.ceil(total_meals / servings_per_box)
-            cost = boxes * int(item["bundle_price_krw"])
-            checkout_total += cost
-            line_orders.append(
-                {
-                    "name": item["name"],
-                    "product_title": item["product_title"],
-                    "boxes_needed": boxes,
-                    "servings_per_box": servings_per_box,
-                    "bundle_price_krw": item["bundle_price_krw"],
-                    "line_total_krw": cost,
-                    "unit_price_krw": item["unit_price_krw"],
-                    "link": item["link"],
-                }
-            )
-        errs = check_meal_constraints(
-            combo_items,
-            summary,
-            constraints,
-            preferences=preferences,
-            total_price_override=checkout_total,
-            default_min_protein=20.0,
-        )
-        if errs:
-            excluded.append({"name": " + ".join(i["name"] for i in combo_items), "reason": "; ".join(errs)})
+        if c_item and p_item.get("food_id") == c_item.get("food_id"):
             continue
+        for p_qty in (1, 2):
+            combo_items = [_scale_serving_qty(p_item, p_qty)] + ([c_item] if c_item else [])
+            summary = summarize_combo(combo_items)
+            line_orders, checkout_total, weeks, total_meals = _build_bulk_orders(combo_items, base_conditions)
+            errs = check_meal_constraints(
+                combo_items,
+                summary,
+                constraints,
+                preferences=preferences,
+                total_price_override=checkout_total,
+                default_min_protein=20.0,
+            )
+            if errs:
+                if p_qty == 1:
+                    excluded.append({"name": " + ".join(i["name"] for i in combo_items), "reason": "; ".join(errs)})
+                continue
 
-        score = summary["protein_per_1000krw"] * 10.0 + summary["protein_density_pct"] - (checkout_total / max(1, total_budget)) * 20.0
-        if score > best_score:
-            best_score = score
-            best_portfolio = {
-                "selected_items": combo_items,
-                "nutrition_summary": summary,
-                "total_price_krw": checkout_total,
-                "per_meal_price_krw": round(checkout_total / total_meals),
-                "shopping_summary": {
-                    "type": "online_bulk",
-                    "period_weeks": weeks,
-                    "total_meals": total_meals,
-                    "total_checkout_krw": checkout_total,
-                    "orders": line_orders,
-                },
-            }
+            score = summary["protein_per_1000krw"] * 10.0 + summary["protein_density_pct"] - (checkout_total / max(1, total_budget)) * 20.0
+            if score > best_score:
+                best_score = score
+                best_portfolio = {
+                    "selected_items": combo_items,
+                    "nutrition_summary": summary,
+                    "total_price_krw": checkout_total,
+                    "per_meal_price_krw": round(checkout_total / total_meals),
+                    "shopping_summary": {
+                        "type": "online_bulk",
+                        "period_weeks": weeks,
+                        "total_meals": total_meals,
+                        "total_checkout_krw": checkout_total,
+                        "orders": line_orders,
+                    },
+                }
     return best_portfolio, excluded
 
 
@@ -444,22 +474,35 @@ def _optimize_meal_set(
 ) -> tuple[dict[str, Any] | None, list[dict[str, str]]]:
     """모드 B/C: [메인 + 서브 + 음료] 2~3품목 선형 조합 최적화."""
     target_kcal = constraints.get("target_meal_kcal")
-    mains = [i for i in items if i.get("category") in {"main", "bulk_protein"}]
-    subs = [i for i in items if i.get("category") == "sub"]
-    drinks = [i for i in items if i.get("category") == "drink"]
+    clean_items = [i for i in items if i.get("category") != "snack"]
+    mains = [i for i in clean_items if i.get("category") in {"main", "bulk_protein"}]
+    subs = [i for i in clean_items if i.get("category") == "sub"]
+    drinks = [i for i in clean_items if i.get("category") == "drink"]
     if not mains:
-        mains = items
+        mains = [i for i in clean_items if i.get("category") != "drink"] or clean_items
 
     combos: list[list[dict[str, Any]]] = []
+    seen_combo_keys: set[tuple[str, ...]] = set()
+
+    def _add_combo(cand: list[dict[str, Any]]) -> None:
+        ids = [c.get("food_id") or c["name"] for c in cand]
+        if len(set(ids)) != len(ids):
+            return
+        sig = tuple(sorted(ids))
+        if sig not in seen_combo_keys:
+            seen_combo_keys.add(sig)
+            combos.append(cand)
+
     for m in mains:
         for s in subs:
-            combos.append([m, s])
+            _add_combo([m, s])
             for d in drinks:
-                combos.append([m, s, d])
+                _add_combo([m, s, d])
         for d in drinks:
-            combos.append([m, d])
-        if not subs and not drinks:
-            combos.append([m])
+            _add_combo([m, d])
+    if not combos:
+        for m in mains:
+            _add_combo([m])
 
     best: dict[str, Any] | None = None
     best_score = -1e9
@@ -512,9 +555,10 @@ def _swap_single_item(
     swap_target: str,
     pool: list[dict[str, Any]],
     constraints: dict[str, Any],
+    base_conditions: dict[str, Any] | None = None,
     preferences: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any] | None, list[dict[str, str]]]:
-    """기존 조합에서 특정 품목만 1:1 핀셋 교체한다 (차액 영양소/예산 보전)."""
+    """기존 조합에서 특정 품목만 1:1 핀셋 교체한다 (차액 영양소/예산 및 대량 묶음 보전)."""
     prev_items = previous_combo.get("selected_items", [])
     if not prev_items:
         return None, [{"name": swap_target, "reason": "이전 추천 조합이 없어 스왑 불가"}]
@@ -530,44 +574,96 @@ def _swap_single_item(
     removed = prev_items[idx_to_replace]
     kept = [it for idx, it in enumerate(prev_items) if idx != idx_to_replace]
     kept_names = {it["name"] for it in kept} | {removed["name"]}
+    kept_ids = {it.get("food_id") for it in kept if it.get("food_id")} | ({removed.get("food_id")} if removed.get("food_id") else set())
 
-    candidates = [p for p in pool if p["name"] not in kept_names and p.get("category") == removed.get("category")]
-    if not candidates:
-        candidates = [p for p in pool if p["name"] not in kept_names]
+    prev_shop = previous_combo.get("shopping_summary") or {}
+    is_bulk = prev_shop.get("type") == "online_bulk"
+    removed_cat = removed.get("category")
+    same_cats = (
+        {"bulk_carb", "sub"} if (is_bulk and removed_cat in {"bulk_carb", "sub"})
+        else {"bulk_protein", "main"} if (is_bulk and removed_cat in {"bulk_protein", "main"})
+        else {removed_cat}
+    )
+
+    primary_candidates = [
+        p for p in pool
+        if p.get("category") != "snack"
+        and p["name"] not in kept_names
+        and p.get("food_id") not in kept_ids
+        and p.get("category") in same_cats
+    ]
+    secondary_candidates = [
+        p for p in pool
+        if p.get("category") != "snack"
+        and p["name"] not in kept_names
+        and p.get("food_id") not in kept_ids
+        and p.get("category") not in same_cats
+    ]
+
+    bulk_cond = dict(base_conditions or {})
+    if is_bulk:
+        if prev_shop.get("period_weeks"):
+            bulk_cond.setdefault("period_weeks", prev_shop["period_weeks"])
+        if prev_shop.get("total_meals"):
+            bulk_cond.setdefault("total_meals", prev_shop["total_meals"])
 
     best = None
     best_score = -1e9
     excluded: list[dict[str, str]] = []
-    for cand in candidates:
-        new_items = [*kept, cand]
-        summary = summarize_combo(new_items)
-        errs = check_meal_constraints(
-            new_items,
-            summary,
-            constraints,
-            preferences=preferences,
-            default_min_protein=20.0,
-        )
-        if errs:
-            excluded.append({"name": cand["name"], "reason": "; ".join(errs)})
-            continue
+    qty_options = (1, 2) if is_bulk else (1,)
+    for cand_group in (primary_candidates, secondary_candidates):
+        if best is not None:
+            break
+        for base_cand in cand_group:
+            for qty in qty_options:
+                cand = _scale_serving_qty(base_cand, qty)
+                new_items = [*kept, cand]
+                summary = summarize_combo(new_items)
+                if is_bulk:
+                    line_orders, checkout_total, weeks, total_meals = _build_bulk_orders(new_items, bulk_cond)
+                    price_override = checkout_total
+                    shop_summary = {
+                        "type": "online_bulk",
+                        "period_weeks": weeks,
+                        "total_meals": total_meals,
+                        "total_checkout_krw": checkout_total,
+                        "orders": line_orders,
+                    }
+                else:
+                    price_override = None
+                    checkout_total = summary["total_price_krw"]
+                    shop_summary = {
+                        "type": "swap_update",
+                        "swapped_from": removed["name"],
+                        "swapped_to": cand["name"],
+                        "checklist": [{"name": c["name"], "unit_price_krw": c["unit_price_krw"]} for c in new_items],
+                    }
 
-        score = cand["protein_density_pct"] + cand["protein_per_1000krw"] * 5.0
-        if score > best_score:
-            best_score = score
-            best = {
-                "selected_items": new_items,
-                "nutrition_summary": summary,
-                "total_price_krw": summary["total_price_krw"],
-                "swapped_from": removed["name"],
-                "swapped_to": cand["name"],
-                "shopping_summary": {
-                    "type": "swap_update",
-                    "swapped_from": removed["name"],
-                    "swapped_to": cand["name"],
-                    "checklist": [{"name": c["name"], "unit_price_krw": c["unit_price_krw"]} for c in new_items],
-                },
-            }
+                errs = check_meal_constraints(
+                    new_items,
+                    summary,
+                    constraints,
+                    preferences=preferences,
+                    total_price_override=price_override,
+                    default_min_protein=20.0,
+                )
+                if errs:
+                    if qty == 1:
+                        excluded.append({"name": cand["name"], "reason": "; ".join(errs)})
+                    continue
+
+                score = cand["protein_density_pct"] + cand["protein_per_1000krw"] * 5.0
+                if score > best_score:
+                    best_score = score
+                    best = {
+                        "selected_items": new_items,
+                        "nutrition_summary": summary,
+                        "total_price_krw": checkout_total,
+                        **({"per_meal_price_krw": round(checkout_total / total_meals)} if is_bulk else {}),
+                        "swapped_from": removed["name"],
+                        "swapped_to": cand["name"],
+                        "shopping_summary": shop_summary,
+                    }
     return best, excluded
 
 
@@ -589,6 +685,9 @@ def optimize_meal_combo(
         prefs["disliked_ingredients"] = list(dict.fromkeys([*prefs.get("disliked_ingredients", []), *prof["disliked_ingredients"]]))
     cons = dict(constraints or {})
     cond = base_conditions or {}
+
+    if mode == "cheating_recovery" and (not prof.get("weight_kg") or not prof.get("gender")):
+        return err(ErrorCode.INVALID_INPUT, "치팅 복구(cheating_recovery) 역산에는 성별과 현재 체중(kg)이 필요합니다.")
 
     reverse_calc = None
     if prof.get("weight_kg") and prof.get("gender"):
@@ -614,7 +713,8 @@ def optimize_meal_combo(
             return err(ErrorCode.INVALID_INPUT, "프로필 역산에는 성별과 현재 체중(kg)이 필요합니다.")
         return ok({"reverse_calc": reverse_calc, "selected_items": [], "nutrition_summary": {}, "excluded_candidates": []})
 
-    merged, merge_excluded = _merge_nutrition_and_price(nutrition_items or [], shopping_products or [])
+    clean_nutrition = [n for n in (nutrition_items or []) if n.get("category") != "snack"]
+    merged, merge_excluded = _merge_nutrition_and_price(clean_nutrition, shopping_products or [])
     filtered, health_excluded = _apply_health_filters(merged, cons, prefs)
     all_excluded = merge_excluded + health_excluded
 
@@ -623,7 +723,7 @@ def optimize_meal_combo(
 
     if mode == "item_swap":
         swap_target = str(cond.get("swap_target") or "")
-        result, combo_excluded = _swap_single_item(previous_combo or {}, swap_target, filtered, cons, prefs)
+        result, combo_excluded = _swap_single_item(previous_combo or {}, swap_target, filtered, cons, cond, prefs)
     elif mode == "online_bulk":
         result, combo_excluded = _optimize_mode_a(filtered, cons, cond, prefs)
     else:

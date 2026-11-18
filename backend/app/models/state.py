@@ -21,6 +21,7 @@ class AgentState(TypedDict, total=False):
     run_id: str
     user_message: str
     mode: ModeType
+    base_mode: str
 
     profile: dict[str, Any]
     base_conditions: dict[str, Any]

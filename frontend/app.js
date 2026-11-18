@@ -4,7 +4,15 @@ const API_BASE = `${API_PROTO}//${API_HOST}:8000/api`;
 
 let lastChatResult = null;
 let selectedLogSession = null;
-let profileSaved = false;
+let profileSavedSessionId = null;
+
+function todayLocalDate() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 
 function esc(str) {
   return String(str ?? "")
@@ -113,7 +121,7 @@ document.getElementById("saveProfileBtn").addEventListener("click", async () => 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(getProfilePayload()),
     });
-    profileSaved = true;
+    profileSavedSessionId = getSessionId();
     const t = data.targets;
     box.innerHTML =
       `<div><strong>TDEE</strong>: ${t.tdee_kcal}kcal → <strong>일일 목표</strong>: ${t.target_daily_kcal}kcal</div>` +
@@ -195,7 +203,7 @@ document.getElementById("chatForm").addEventListener("submit", async (e) => {
       body: JSON.stringify({
         session_id: getSessionId(),
         message: msg,
-        profile: profileSaved ? getProfilePayload() : null,
+        profile: profileSavedSessionId === getSessionId() ? getProfilePayload() : null,
       }),
     });
     loadingEl.remove();
@@ -208,7 +216,7 @@ document.getElementById("chatForm").addEventListener("submit", async (e) => {
     const saveBar = document.getElementById("savePlanBox");
     if (data.candidate_combo?.selected_items?.length && data.validation_result?.passed) {
       document.getElementById("planTitleInput").value = `모드${data.mode} 추천 식단`;
-      document.getElementById("planDateInput").value = new Date().toISOString().slice(0, 10);
+      document.getElementById("planDateInput").value = todayLocalDate();
       saveBar.classList.remove("hidden");
     } else {
       saveBar.classList.add("hidden");
@@ -231,7 +239,7 @@ document.getElementById("savePlanBtn").addEventListener("click", async () => {
     session_id: getSessionId(),
     title: document.getElementById("planTitleInput").value.trim() || "식단 계획",
     mode: lastChatResult.mode,
-    plan_date: document.getElementById("planDateInput").value || new Date().toISOString().slice(0, 10),
+    plan_date: document.getElementById("planDateInput").value || todayLocalDate(),
     start_time: document.getElementById("planStartInput").value || null,
     end_time: document.getElementById("planEndInput").value || null,
     items: combo.selected_items,
@@ -261,7 +269,7 @@ async function loadPlans() {
   const listEl = document.getElementById("plansList");
   showBanner("plansAlert", "");
   try {
-    const plans = await apiJson(`${API_BASE}/plans`);
+    const plans = await apiJson(`${API_BASE}/plans?session_id=${encodeURIComponent(getSessionId())}`);
     if (!plans.length) {
       listEl.innerHTML = `<p class="muted">저장된 식단 계획이 없습니다.</p>`;
       return;

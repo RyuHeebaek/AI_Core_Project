@@ -8,7 +8,7 @@ import requests
 from pydantic import BaseModel, Field
 
 from app.config import get_settings
-from app.tools.base import ErrorCode, err, ok, safe_tool
+from app.tools.base import ErrorCode, err, http_get, ok, safe_tool
 
 
 class NearbyStoreInput(BaseModel):
@@ -98,7 +98,7 @@ def search_nearby_store(
 
     headers = {"Authorization": f"KakaoAK {settings.kakao_rest_api_key}"}
     try:
-        geo_resp = requests.get(
+        geo_resp = http_get(
             settings.kakao_local_api_url,
             headers=headers,
             params={"query": loc, "size": 1},
@@ -113,7 +113,7 @@ def search_nearby_store(
         stores: list[dict[str, Any]] = []
         seen_ids: set[str] = set()
         for brand in target_brands:
-            store_resp = requests.get(
+            store_resp = http_get(
                 settings.kakao_local_api_url,
                 headers=headers,
                 params={

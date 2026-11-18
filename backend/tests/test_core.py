@@ -108,7 +108,7 @@ def test_validator_stage1_and_stage2():
             {"name": "무가당 그릭요거트 100g", "category": "sub", "kcal": 95, "protein_g": 10, "carbs_g": 4.5, "fat_g": 4, "sugar_g": 3.5, "unit_price_krw": 2600, "has_lactose": True, "has_caffeine": False}
         ]
     }
-    ok1, errs1, _ = _stage1_deterministic(bad_lactose_combo, {"lactose_free": True, "budget_krw": 5000}, {}, "B")
+    ok1, errs1, _ = _stage1_deterministic(bad_lactose_combo, {"lactose_free": True, "budget_krw": 5000}, {}, "cvs_instant")
     assert ok1 is False and any("유당" in e for e in errs1)
 
     snack_as_main = {
@@ -116,7 +116,7 @@ def test_validator_stage1_and_stage2():
             {"name": "초콜릿 과자 세트", "category": "main", "kcal": 500, "protein_g": 4, "carbs_g": 65, "fat_g": 24, "sugar_g": 35, "unit_price_krw": 3000}
         ]
     }
-    ok2, errs2, _ = _stage2_semantic_check(snack_as_main, "B")
+    ok2, errs2, _ = _stage2_semantic_check(snack_as_main, "cvs_instant")
     assert ok2 is False and any("INVALID_FOOD_MATCH" in e for e in errs2)
 
 
@@ -157,7 +157,7 @@ def test_chat_api_modes_memory_replan_and_swap():
         assert not it.get("has_caffeine")
     assert d_b2["candidate_combo"]["nutrition_summary"]["total_sugar_g"] <= 10.0
 
-    # 5) 1:1 품목 스왑 (item_swap)
+    # 5) 1:1 품목 스왑 (item_swap) 및 스왑 이후 후속 턴 복귀 확인
     first_sub = next((i["name"] for i in d_b2["candidate_combo"]["selected_items"] if i["category"] == "sub"), None)
     if first_sub:
         keyword = "계란" if "계란" in first_sub else "두부바" if "두부바" in first_sub else "아몬드"
@@ -165,22 +165,39 @@ def test_chat_api_modes_memory_replan_and_swap():
         d_swap = r_swap.json()
         assert d_swap["mode"] == "item_swap"
         assert d_swap["validation_result"]["passed"] is True
+        r_after_swap = client.post("/api/chat", json={"session_id": "s3", "message": "저당 무카페인으로 다시 추천해줘"})
+        assert r_after_swap.json()["mode"] == "cvs_instant"
+        assert r_after_swap.json()["validation_result"]["passed"] is True
 
-    # 6) 모드 A(online_bulk) 대량 장바구니
+    # 6) 모드 A(online_bulk) 대량 장바구니 + 저장 프로필(75kg 2끼) + bulk 스왑
+    client.put("/api/profiles/s4", json={"gender": "male", "weight_kg": 75, "target_weight_kg": 70, "target_weeks": 4, "goal_type": "diet", "meals_per_day": 3})
     r_a = client.post("/api/chat", json={"session_id": "s4", "message": "4주 하루 2끼 15만원 이하 온라인 대량 장바구니 짜줘"})
     d_a = r_a.json()
     assert d_a["mode"] == "online_bulk"
     assert d_a["validation_result"]["passed"] is True
+    assert d_a["candidate_combo"]["nutrition_summary"]["total_protein_g"] >= 51.0
     assert d_a["candidate_combo"]["shopping_summary"]["type"] == "online_bulk"
+    second_item = d_a["candidate_combo"]["selected_items"][1]["name"]
+    swap_kw = "계란" if "계란" in second_item else "오트밀" if "오트밀" in second_item else "현미"
+    r_a_swap = client.post("/api/chat", json={"session_id": "s4", "message": f"{swap_kw} 빼고 다른 걸로 바꿔줘"})
+    assert r_a_swap.json()["mode"] == "item_swap"
+    assert r_a_swap.json()["validation_result"]["passed"] is True
+    assert r_a_swap.json()["candidate_combo"]["shopping_summary"]["type"] == "online_bulk"
 
-    # 7) 모드 C(cheating_recovery) 치팅데이 복구
+    # 7) 모드 C(cheating_recovery) 치팅데이 복구 — 성별 누락 시 되묻기, 포함 시 실제 복구 역산 검증
+    r_c_missing = client.post(
+        "/api/chat",
+        json={"session_id": "s5_missing", "message": "체중 75kg인데 어제 치팅으로 1200kcal 초과했어 3일 복구 식단 짜줘"},
+    )
+    assert r_c_missing.json()["clarification_needed"] is True
     r_c = client.post(
         "/api/chat",
-        json={"session_id": "s5", "message": "체중 75kg인데 어제 치팅으로 1200kcal 초과했어 3일 복구 식단 짜줘"},
+        json={"session_id": "s5", "message": "남성 체중 75kg인데 어제 치팅으로 1200kcal 초과했어 3일 복구 식단 짜줘"},
     )
     d_c = r_c.json()
     assert d_c["mode"] == "cheating_recovery"
     assert d_c["validation_result"]["passed"] is True
+    assert d_c["candidate_combo"]["reverse_calc"]["mode_c_recovery"]["min_daily_protein_g"] == 120.0
 
     # 8) 재계획 상한 도달 테스트 (NF3004): 500원 예산 불가
     r_cap = client.post("/api/chat", json={"session_id": "s6", "message": "강남역 편의점 500원 이하 고단백 한끼"})
@@ -200,7 +217,7 @@ def test_plans_crud_and_overlap_warning():
         json={
             "session_id": "s1",
             "title": "점심 닭가슴살 세트",
-            "mode": "B",
+            "mode": "cvs_instant",
             "plan_date": "2026-11-20",
             "start_time": "12:00",
             "end_time": "13:00",
@@ -219,7 +236,7 @@ def test_plans_crud_and_overlap_warning():
         json={
             "session_id": "s1",
             "title": "중복 테스트 식단",
-            "mode": "B",
+            "mode": "cvs_instant",
             "plan_date": "2026-11-20",
             "start_time": "12:30",
             "end_time": "13:30",
@@ -484,7 +501,7 @@ def test_multiturn_caffeine_reset_and_safe_crash_and_f3020_diagnosis(monkeypatch
             json={
                 "session_id": "s_conc",
                 "title": f"동시계획-{idx}",
-                "mode": "B",
+                "mode": "cvs_instant",
                 "plan_date": "2026-11-25",
                 "start_time": "12:00",
                 "end_time": "13:00",
@@ -507,3 +524,117 @@ def test_multiturn_caffeine_reset_and_safe_crash_and_f3020_diagnosis(monkeypatch
     crash_r = client.post("/api/chat", json={"session_id": "s_crash", "message": "안녕"})
     assert crash_r.status_code == 200
     assert "SECRET_INTERNAL_PATH" not in (crash_r.json().get("error_notice") or "")
+
+
+def test_audit_regressions_parsers_matching_regex_and_cache(monkeypatch):
+    """감사 백로그 #4~#10 회귀 검증: 100+20g·550g·빈 XML·오매칭·중복조합·정규식·실패캐시."""
+    from app.agents.planner import _extract_rule_based
+    from app.agents.worker import worker_node
+    from app.tools.nutrition_tool import search_nutrition_db
+    from app.tools.optimizer_tool import _merge_nutrition_and_price, _optimize_meal_set, _scale_nutrition_to_product
+    from app.tools.price_tool import clear_price_caches, parse_bundle_unit, search_product_price
+
+    # #5: "100+20g" 백트래킹 오파싱 방지 & 500~600g 경계 통일
+    p_plus_weight = parse_bundle_unit("닭가슴살 100+20g")
+    assert p_plus_weight["servings_per_purchase"] == 1.0
+    p_550 = parse_bundle_unit("닭가슴살 파우치 550g")
+    assert p_550["servings_per_purchase"] == 5.5
+    scaled_550 = _scale_nutrition_to_product(
+        {"food_id": "F550", "name": "파우치", "serving_g": 100.0, "kcal": 120.0, "protein_g": 20.0, "carbs_g": 2.0, "fat_g": 2.0},
+        {"unit_weight_g": 550.0, "pack_count": 1, "servings_per_purchase": 5.5},
+    )
+    assert scaled_550["kcal"] == 120.0 and scaled_550["serving_g"] == 100.0
+
+    # #6: "두부" ↔ "두부바" 오매칭 차단, 조리법("스팀" vs "훈제") 유지, 빈 mains 중복 방지
+    merged, excluded = _merge_nutrition_and_price(
+        [
+            {"food_id": "N1", "name": "두부", "category": "main", "serving_g": 100.0, "kcal": 80.0, "protein_g": 9.0, "carbs_g": 2.0, "fat_g": 4.0},
+            {"food_id": "N2", "name": "스팀 닭가슴살 100g", "category": "main", "serving_g": 100.0, "kcal": 110.0, "protein_g": 23.0, "carbs_g": 1.0, "fat_g": 1.5},
+        ],
+        [
+            {"product_id": "SP1", "title": "편의점 단백질 두부바 70g 1개", "unit_price_krw": 2200, "bundle_price_krw": 2200, "pack_count": 1, "unit_weight_g": 70.0, "servings_per_purchase": 1.0, "unit_basis": "1개", "mall_name": "CU", "link": "http://a"},
+            {"product_id": "SP2", "title": "편의점 훈제 닭가슴살 100g 1팩", "unit_price_krw": 3200, "bundle_price_krw": 3200, "pack_count": 1, "unit_weight_g": 100.0, "servings_per_purchase": 1.0, "unit_basis": "1팩", "mall_name": "CU", "link": "http://b"},
+            {"product_id": "SP3", "title": "편의점 스팀 닭가슴살 100g 1팩", "unit_price_krw": 2900, "bundle_price_krw": 2900, "pack_count": 1, "unit_weight_g": 100.0, "servings_per_purchase": 1.0, "unit_basis": "1팩", "mall_name": "CU", "link": "http://c"},
+        ],
+    )
+    assert any(e["name"] == "두부" for e in excluded)
+    assert merged[0]["unit_price_krw"] == 2900
+
+    # 빈 mains & snack 유입 차단: 동일 food_id 중복 조합 금지
+    no_main_pool = [
+        {"food_id": "S1", "name": "초코 쿠키", "category": "snack", "serving_g": 100.0, "kcal": 450.0, "protein_g": 4.0, "carbs_g": 60.0, "fat_g": 20.0, "sugar_g": 30.0, "unit_price_krw": 2000, "protein_density_pct": 3.5, "protein_per_1000krw": 2.0},
+        {"food_id": "SUB1", "name": "감동란 반숙 계란", "category": "sub", "serving_g": 100.0, "kcal": 140.0, "protein_g": 12.0, "carbs_g": 1.2, "fat_g": 9.6, "sugar_g": 0.5, "unit_price_krw": 2400, "protein_density_pct": 34.3, "protein_per_1000krw": 5.0},
+        {"food_id": "DRK1", "name": "무가당 두유", "category": "drink", "serving_g": 190.0, "kcal": 95.0, "protein_g": 9.5, "carbs_g": 3.0, "fat_g": 5.0, "sugar_g": 1.2, "unit_price_krw": 1600, "protein_density_pct": 40.0, "protein_per_1000krw": 5.9},
+    ]
+    best_no_main, _ = _optimize_meal_set(no_main_pool, {"budget_krw": 8000, "min_meal_protein_g": 20.0}, "cvs_instant")
+    assert best_no_main is not None
+    picked_ids = [i["food_id"] for i in best_no_main["selected_items"]]
+    assert len(set(picked_ids)) == len(picked_ids) and "S1" not in picked_ids
+
+    # #7, #8: 목표체중 선입력 & ~역 비지명 단어 오추출 방지
+    ext_w = _extract_rule_based("목표 체중 65kg 현재 75kg 남성 4주 감량 역산해줘")
+    assert ext_w["profile_updates"]["target_weight_kg"] == 65.0
+    assert ext_w["profile_updates"]["weight_kg"] == 75.0
+    ext_loc = _extract_rule_based("면역 높이는 서울지역 편의점 8000원 이하 한끼")
+    assert "location" not in ext_loc["base_conditions"]
+
+    # #4, #5(소비자원), #6(snack 제외): 빈 XML 오류 응답 비캐싱 & "12팩"+190ml 결합 & snack 제외
+    clear_price_caches()
+    monkeypatch.setenv("DATA_GO_KR_API_KEY", "test-key")
+    monkeypatch.setenv("USE_MOCK", "false")
+    call_stage = {"n": 0}
+
+    class _FakeResp:
+        def __init__(self, payload=None, raw_bytes: bytes = b""):
+            self._payload = payload
+            self.content = raw_bytes
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return self._payload
+
+    def fake_get(url, **kwargs):
+        if "FoodNtrCpntDb" in url:
+            return _FakeResp({"body": {"items": [
+                {"FOOD_CD": "SN1", "FOOD_NM_KR": "초코 쿠키", "SERVING_SIZE": "100g", "AMT_NUM1": "500", "AMT_NUM3": "5", "AMT_NUM4": "25", "AMT_NUM6": "65"},
+                {"FOOD_CD": "OK1", "FOOD_NM_KR": "매일두유 99.9", "SERVING_SIZE": "100g", "AMT_NUM1": "50", "AMT_NUM3": "5", "AMT_NUM4": "2.6", "AMT_NUM6": "1.5"},
+            ]}})
+        if "getProductInfoSvc.do" in url:
+            call_stage["n"] += 1
+            if call_stage["n"] == 1:
+                return _FakeResp(raw_bytes=b"<OpenAPI_ServiceResponse><cmmMsgHeader><returnReasonCode>22</returnReasonCode><returnAuthMsg>LIMITED</returnAuthMsg></cmmMsgHeader></OpenAPI_ServiceResponse>")
+            return _FakeResp(raw_bytes="<response><result><item><goodId>G300</goodId><goodName>매일두유 99.9(12팩)</goodName><goodTotalCnt>190</goodTotalCnt><goodUnitDivCode>ml</goodUnitDivCode></item></result></response>".encode("utf-8"))
+        if "getStoreInfoSvc.do" in url:
+            return _FakeResp(raw_bytes=b"<response><result><item><entpId>E1</entpId><entpName>GS25</entpName><entpTypeCode>CS</entpTypeCode></item></result></response>")
+        if "getProductPriceInfoSvc" in url:
+            return _FakeResp(raw_bytes=b"<response><result><item><goodId>G300</goodId><entpId>E1</entpId><goodPrice>14400</goodPrice></item></result></response>")
+        raise AssertionError(f"Unexpected URL: {url}")
+
+    monkeypatch.setattr("requests.get", fake_get)
+    n_check = search_nutrition_db("두유")
+    assert n_check["ok"] is True and [i["food_id"] for i in n_check["data"]["items"]] == ["OK1"]
+
+    err_first = search_product_price("두유", mode="cvs_instant")
+    assert err_first["ok"] is False and err_first["error"]["code"] == "API_ERROR"
+    ok_second = search_product_price("두유", mode="cvs_instant")
+    assert ok_second["ok"] is True
+    assert ok_second["data"]["products"][0]["pack_count"] == 12
+    assert ok_second["data"]["products"][0]["unit_weight_g"] == 190.0
+
+    # #9: 실패한 검색 결과(NO_SHOPPING_RESULT) 재계획 시 캐시 히트 검증
+    monkeypatch.setenv("DATA_GO_KR_API_KEY", "")
+    monkeypatch.setenv("USE_MOCK", "true")
+    w_state = {
+        "session_id": "s_cache_fail",
+        "run_id": "run_cf",
+        "worker_llm_enabled": False,
+        "task_list": [
+            {"task_id": "t1", "tool_name": "search_product_price", "args": {"query": "존재안함상품999", "mode": "cvs_instant", "display": 8}, "fixed_args": [], "depends_on": []}
+        ],
+    }
+    res1 = worker_node(w_state)
+    assert res1["execution_trace"][0]["step"] == "tool_call"
+    res2 = worker_node({**w_state, "shopping_cache": res1["shopping_cache"]})
+    assert res2["execution_trace"][0]["step"] == "tool_cache_hit" and res2["execution_trace"][0]["ok"] is False

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import re
+import threading
+import time
 import xml.etree.ElementTree as ET
 from datetime import date, timedelta
 from typing import Any
@@ -11,7 +13,7 @@ import requests
 from pydantic import BaseModel, Field
 
 from app.config import get_settings
-from app.tools.base import ErrorCode, err, ok, safe_tool
+from app.tools.base import ErrorCode, err, http_get, ok, safe_tool
 
 CVS_DISCLAIMER = "조사 기준가 기반 역산 금액이며 매장별 1+1/2+1 행사 적용 시 실제 결제액이 달라질 수 있습니다."
 OPEN_FOOD_FACTS_URL = "https://world.openfoodfacts.org/cgi/search.pl"
@@ -29,7 +31,7 @@ class PriceSearchInput(BaseModel):
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
 _PACK_RE = re.compile(r"(\d+)\s*(팩|봉|개|병|캔|입|구|포|박스)")
 _PLUS_PACK_RE = re.compile(
-    r"(\d+)(?!\s*(?:kg|g|ml|l)\b)\s*(?:팩|봉|개|병|캔|입|구|포|박스)?\s*\+\s*(\d+)(?!\s*(?:kg|g|ml|l)\b)\s*(?:팩|봉|개|병|캔|입|구|포|박스)?",
+    r"(?<!\d)(\d+)(?!\d|\s*(?:kg|g|ml|l)\b)\s*(?:팩|봉|개|병|캔|입|구|포|박스)?\s*\+\s*(\d+)(?!\d|\s*(?:kg|g|ml|l)\b)\s*(?:팩|봉|개|병|캔|입|구|포|박스)?",
     re.IGNORECASE,
 )
 _MUL_PACK_RE = re.compile(r"(\d+)\s*[xX×*]\s*(\d+)\s*(?:팩|봉|개|병|캔|입|구|포|박스)?")
@@ -225,17 +227,33 @@ def _recent_inspect_days(weeks: int = 4) -> list[str]:
     return [(latest_friday - timedelta(days=7 * w)).strftime("%Y%m%d") for w in range(weeks)]
 
 
-_GOODS_CATALOG_CACHE: dict[tuple[str, str], list[tuple[str, str]]] = {}
-_STORE_CATALOG_CACHE: dict[tuple[str, str], dict[str, tuple[str, str]]] = {}
+_CATALOG_TTL_SEC = 6 * 3600
+_PRICE_CACHE_TTL_SEC = 3600
+_CACHE_LOCK = threading.Lock()
+_GOODS_CATALOG_CACHE: dict[tuple[str, str], tuple[float, list[tuple[str, str]]]] = {}
+_STORE_CATALOG_CACHE: dict[tuple[str, str], tuple[float, dict[str, tuple[str, str]]]] = {}
+_ITEM_PRICE_CACHE: dict[tuple[str, str], tuple[float, list[dict[str, str]]]] = {}
 
 
 def clear_price_caches() -> None:
-    """소비자원 상품/매장 마스터 캐시를 초기화한다."""
-    _GOODS_CATALOG_CACHE.clear()
-    _STORE_CATALOG_CACHE.clear()
+    """소비자원 상품/매장 마스터 및 품목 가격 캐시를 초기화한다."""
+    with _CACHE_LOCK:
+        _GOODS_CATALOG_CACHE.clear()
+        _STORE_CATALOG_CACHE.clear()
+        _ITEM_PRICE_CACHE.clear()
 
 
 _ENTP_TYPE_MAP = {"CS": "cvs", "LM": "mart_bulk", "SM": "mart_bulk"}
+
+
+def _sort_by_retail_preference(products: list[dict[str, Any]], mode: str) -> list[dict[str, Any]]:
+    preferred_type = "cvs" if mode == "cvs_instant" else "mart_bulk" if mode == "online_bulk" else None
+    ordered = sorted(products, key=lambda p: (0 if p["retail_type"] == preferred_type else 1, p["unit_price_krw"]))
+    if preferred_type:
+        matched = [p for p in ordered if p["retail_type"] == preferred_type]
+        if matched:
+            return matched
+    return ordered
 
 
 def _classify_retail_channel(channel_text: str) -> str:
@@ -281,7 +299,7 @@ def parse_bundle_unit(title: str, default_serving_g: float = 100.0) -> dict[str,
 
     if weight_g and weight_g > 0:
         is_powder = any(k in clean_title for k in ("프로틴", "파우더", "단백질"))
-        is_bulk_grain = any(k in clean_title for k in ("오트밀", "귀리", "현미")) or weight_g >= 600.0
+        is_bulk_grain = any(k in clean_title for k in ("오트밀", "귀리", "현미")) or weight_g > 500.0
         if is_powder:
             servings = max(1.0, round(weight_g / 30.0, 1))
             basis = f"총 {weight_g:.0f}g (30g/회 기준 약 {servings}회분)"
@@ -341,7 +359,7 @@ def _enrich_product(raw: dict[str, Any], default_serving_g: float) -> tuple[dict
 def _search_open_food_facts(query: str, limit: int = 5) -> list[dict[str, Any]]:
     """2순위 보조: API 키 없이 Open Food Facts에서 가공식품 메타데이터/영양성분을 보완 조회한다."""
     try:
-        resp = requests.get(
+        resp = http_get(
             OPEN_FOOD_FACTS_URL,
             params={"search_terms": query.strip(), "search_simple": 1, "action": "process", "json": 1, "page_size": limit},
             headers={"User-Agent": "DietPlannerAgent/1.0"},
@@ -375,9 +393,13 @@ def _search_open_food_facts(query: str, limit: int = 5) -> list[dict[str, Any]]:
 
 def _load_consumer_goods(base: str, api_key: str) -> list[tuple[str, str]]:
     ckey = (base, api_key)
-    if ckey in _GOODS_CATALOG_CACHE:
-        return _GOODS_CATALOG_CACHE[ckey]
-    resp = requests.get(f"{base}/getProductInfoSvc.do", params={"serviceKey": api_key}, timeout=8)
+    now = time.monotonic()
+    with _CACHE_LOCK:
+        cached = _GOODS_CATALOG_CACHE.get(ckey)
+        if cached and (now - cached[0]) < _CATALOG_TTL_SEC:
+            return cached[1]
+
+    resp = http_get(f"{base}/getProductInfoSvc.do", params={"serviceKey": api_key}, timeout=8)
     resp.raise_for_status()
     root = _decode_xml_bytes(resp.content)
     goods: list[tuple[str, str]] = []
@@ -387,20 +409,31 @@ def _load_consumer_goods(base: str, api_key: str) -> list[tuple[str, str]]:
             gname = (item.findtext("goodName") or "").strip()
             cnt = (item.findtext("goodTotalCnt") or "").strip()
             unit = (item.findtext("goodUnitDivCode") or item.findtext("goodTotalDivCode") or "").strip()
-            has_unit = bool(_PACK_RE.search(gname) or _WEIGHT_RE.search(gname))
-            full_name = gname if (has_unit or not cnt) else f"{gname} {cnt}{unit}".strip()
+            has_pack = bool(_PACK_RE.search(gname))
+            has_weight = bool(_WEIGHT_RE.search(gname))
+            if cnt and ((not has_weight and unit.lower() in {"g", "kg", "ml", "l"}) or (not has_pack and not has_weight)):
+                full_name = f"{gname} {cnt}{unit}".strip()
+            else:
+                full_name = gname
             if gid and gname:
                 goods.append((gid, full_name))
-    _GOODS_CATALOG_CACHE[ckey] = goods
+    if not goods:
+        err_msg = (root.findtext(".//returnAuthMsg") or root.findtext(".//resultMsg") or "빈 상품 목록").strip()
+        raise ValueError(f"소비자원 상품 카탈로그 응답 비정상: {err_msg}")
+    with _CACHE_LOCK:
+        _GOODS_CATALOG_CACHE[ckey] = (time.monotonic(), goods)
     return goods
 
 
 def _load_consumer_stores(base: str, api_key: str) -> dict[str, tuple[str, str]]:
     ckey = (base, api_key)
-    if ckey in _STORE_CATALOG_CACHE:
-        return _STORE_CATALOG_CACHE[ckey]
+    now = time.monotonic()
+    with _CACHE_LOCK:
+        cached = _STORE_CATALOG_CACHE.get(ckey)
+        if cached and (now - cached[0]) < _CATALOG_TTL_SEC:
+            return cached[1]
     try:
-        resp = requests.get(f"{base}/getStoreInfoSvc.do", params={"serviceKey": api_key}, timeout=8)
+        resp = http_get(f"{base}/getStoreInfoSvc.do", params={"serviceKey": api_key}, timeout=8)
         resp.raise_for_status()
         root = _decode_xml_bytes(resp.content)
         stores: dict[str, tuple[str, str]] = {}
@@ -411,10 +444,48 @@ def _load_consumer_stores(base: str, api_key: str) -> dict[str, tuple[str, str]]
                 etype = _ENTP_TYPE_MAP.get((vo.findtext("entpTypeCode") or "").strip().upper(), "other")
                 if eid:
                     stores[eid] = (ename or f"매장-{eid}", etype)
-        _STORE_CATALOG_CACHE[ckey] = stores
+        if not stores:
+            return {}
+        with _CACHE_LOCK:
+            _STORE_CATALOG_CACHE[ckey] = (time.monotonic(), stores)
         return stores
     except Exception:
         return {}
+
+
+def _get_item_price_entries(base: str, api_key: str, gid: str, inspect_days: list[str]) -> list[dict[str, str]]:
+    ckey = (base, gid)
+    now = time.monotonic()
+    with _CACHE_LOCK:
+        cached = _ITEM_PRICE_CACHE.get(ckey)
+        if cached and (now - cached[0]) < _PRICE_CACHE_TTL_SEC:
+            return cached[1]
+
+    entries: list[dict[str, str]] = []
+    for day in inspect_days:
+        price_resp = http_get(
+            f"{base}/getProductPriceInfoSvc",
+            params={"serviceKey": api_key, "goodId": gid, "goodInspectDay": day},
+            timeout=6,
+        )
+        price_resp.raise_for_status()
+        price_root = _decode_xml_bytes(price_resp.content)
+        found = [p for p in price_root.iter() if p.tag.lower().endswith(("item", "goodpricevo")) and p.findtext("goodPrice")]
+        if found:
+            entries = [
+                {
+                    "goodPrice": (p.findtext("goodPrice") or "").strip(),
+                    "entpId": (p.findtext("entpId") or "").strip(),
+                    "entpName": (p.findtext("entpName") or p.findtext("entpTypeName") or "").strip(),
+                    "plusoneYn": (p.findtext("plusoneYn") or "").strip().upper(),
+                }
+                for p in found
+            ]
+            break
+
+    with _CACHE_LOCK:
+        _ITEM_PRICE_CACHE[ckey] = (time.monotonic(), entries)
+    return entries
 
 
 def _fetch_consumer_price_live(query: str, mode: str, display: int, default_serving_g: float) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
@@ -430,36 +501,29 @@ def _fetch_consumer_price_live(query: str, mode: str, display: int, default_serv
 
     store_map = _load_consumer_stores(base, s.data_go_kr_api_key)
     inspect_days = _recent_inspect_days(4)
+    preferred_type = "cvs" if mode == "cvs_instant" else "mart_bulk" if mode == "online_bulk" else None
     products: list[dict[str, Any]] = []
     unparsed: list[dict[str, str]] = []
+    last_exc: Exception | None = None
 
-    for gid, gname in matched_goods[:5]:
-        price_nodes: list[ET.Element] = []
-        for day in inspect_days:
-            price_resp = requests.get(
-                f"{base}/getProductPriceInfoSvc",
-                params={"serviceKey": s.data_go_kr_api_key, "goodId": gid, "goodInspectDay": day},
-                timeout=8,
-            )
-            price_resp.raise_for_status()
-            price_root = _decode_xml_bytes(price_resp.content)
-            found = [p for p in price_root.iter() if p.tag.lower().endswith(("item", "goodpricevo")) and p.findtext("goodPrice")]
-            if found:
-                price_nodes = found
-                break
+    for idx, (gid, gname) in enumerate(matched_goods[:12]):
+        try:
+            price_entries = _get_item_price_entries(base, s.data_go_kr_api_key, gid, inspect_days)
+        except Exception as exc:
+            last_exc = exc
+            continue
 
-        for p_item in price_nodes:
-            raw_price = (p_item.findtext("goodPrice") or "").strip()
-            entp_id = (p_item.findtext("entpId") or "").strip()
+        for p_item in price_entries:
+            entp_id = p_item["entpId"]
             entp_name, mapped_type = store_map.get(entp_id, ("", "other"))
-            entp_name = (p_item.findtext("entpName") or p_item.findtext("entpTypeName") or entp_name or entp_id or "한국소비자원 조사매장").strip()
-            plusone = (p_item.findtext("plusoneYn") or "").strip().upper()
+            entp_name = p_item["entpName"] or entp_name or entp_id or "한국소비자원 조사매장"
+            plusone = p_item["plusoneYn"]
             channel_label = f"{entp_name}{' (1+1)' if plusone == 'Y' else ''}"
             retail_type = mapped_type if mapped_type != "other" else _classify_retail_channel(channel_label)
             raw = {
                 "product_id": f"{gid}-{entp_id or entp_name}",
                 "title": gname,
-                "price": raw_price,
+                "price": p_item["goodPrice"],
                 "channel": channel_label,
                 "retail_type": retail_type,
                 "link": f"https://www.price.go.kr/tprice/portal/goodinfo/goodInfoView.do?goodId={gid}",
@@ -470,10 +534,16 @@ def _fetch_consumer_price_live(query: str, mode: str, display: int, default_serv
             elif reason:
                 unparsed.append({"name": gname, "reason": reason})
 
-    # 모드별 업태 우선 정렬 (cvs_instant -> 편의점 우선, online_bulk -> 대형마트/할인점 최저가 우선)
-    preferred_type = "cvs" if mode == "cvs_instant" else "mart_bulk" if mode == "online_bulk" else None
-    products.sort(key=lambda p: (0 if p["retail_type"] == preferred_type else 1, p["unit_price_krw"]))
-    return products[:display], unparsed
+        if idx >= 4 and len(products) >= display and (
+            preferred_type is None or any(p["retail_type"] == preferred_type for p in products)
+        ):
+            break
+
+    if not products and not unparsed and last_exc is not None:
+        raise last_exc
+
+    ordered = _sort_by_retail_preference(products, mode)
+    return ordered[:display], unparsed
 
 
 def _search_mock(query: str, mode: str, display: int, default_serving_g: float) -> dict[str, Any]:
@@ -493,8 +563,7 @@ def _search_mock(query: str, mode: str, display: int, default_serving_g: float) 
         if len(products) >= display:
             break
 
-    preferred_type = "cvs" if mode == "cvs_instant" else "mart_bulk" if mode == "online_bulk" else None
-    products.sort(key=lambda p: (0 if p["retail_type"] == preferred_type else 1, p["unit_price_krw"]))
+    products = _sort_by_retail_preference(products, mode)[:display]
 
     if not products and unparsed:
         return err(ErrorCode.UNIT_PARSE_FAILED, f"'{query}' 상품의 수량/중량 단위를 파싱할 수 없습니다.")
@@ -556,13 +625,11 @@ def search_product_price(
             }
         )
 
-    # 1순위 소비자원 DB에 없는 가공식품은 2순위 Open Food Facts로 메타데이터 보완
-    off_items = _search_open_food_facts(query, limit=min(5, display))
     if settings.use_mock:
-        mock_res = _search_mock(query, mode, display, default_serving_g)
-        if mock_res["ok"] and off_items:
-            mock_res["data"]["openfoodfacts_items"] = off_items
-        return mock_res
+        return _search_mock(query, mode, display, default_serving_g)
+
+    # 1순위 소비자원 DB에 없는 가공식품은 실API 전용 모드에서만 2순위 Open Food Facts로 메타데이터 보완
+    off_items = _search_open_food_facts(query, limit=min(5, display))
 
     if unparsed:
         return err(ErrorCode.UNIT_PARSE_FAILED, f"'{query}'에서 단가 환산 가능한 상품을 찾지 못했습니다.")

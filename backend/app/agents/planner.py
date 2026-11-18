@@ -27,6 +27,7 @@ _KCAL_CAP_RE = re.compile(r"(\d+(?:,\d{3})*)\s*(?:kcal|칼로리)\s*(?:이하|�
 
 _KNOWN_BRANDS = ["CU", "GS25", "세븐일레븐", "이마트24"]
 _KNOWN_DISLIKES = ["오이", "당근", "고수", "땅콩", "새우", "계란", "두부", "닭가슴살", "우유", "요거트", "아몬드"]
+_NON_LOCATION_SUFFIXES = ("지역", "구역", "면역", "체력", "내역", "번역", "배역", "검역", "방역")
 
 
 def _parse_budget(text: str) -> int | None:
@@ -43,9 +44,10 @@ def _parse_budget(text: str) -> int | None:
 
 
 _SWAP_TARGETS = (
-    "그릭요거트", "요거트", "감동란", "계란", "두부바", "닭가슴살",
-    "도시락", "샐러드", "아몬드", "프로틴", "두유", "콜라",
-    "탄산수", "아메리카노", "음료", "서브", "메인",
+    "그릭요거트", "요거트", "감동란", "계란", "두부바", "두부", "닭가슴살",
+    "도시락", "샐러드", "아몬드", "프로틴", "두유", "콜라", "오트밀",
+    "현미", "곤약밥", "참치", "바나나", "삼각김밥", "탄산수", "아메리카노",
+    "음료", "서브", "메인",
 )
 
 
@@ -95,11 +97,12 @@ def _extract_rule_based(text: str) -> dict[str, Any]:
     t_weight = _TARGET_WEIGHT_RE.search(text)
     if t_weight:
         extracted["profile_updates"]["target_weight_kg"] = float(t_weight.group(1))
-    w_match = _WEIGHT_RE.search(text)
-    if w_match:
-        weight_val = float(w_match.group(1) or w_match.group(2))
-        if not t_weight or w_match.start() != t_weight.start():
-            extracted["profile_updates"]["weight_kg"] = weight_val
+    t_span = t_weight.span() if t_weight else None
+    for w_match in _WEIGHT_RE.finditer(text):
+        if t_span and w_match.start() >= t_span[0] and w_match.end() <= t_span[1]:
+            continue
+        extracted["profile_updates"]["weight_kg"] = float(w_match.group(1) or w_match.group(2))
+        break
     if m_weeks := _WEEKS_RE.search(text):
         weeks = int(m_weeks.group(1))
         extracted["profile_updates"]["target_weeks"] = weeks
@@ -154,8 +157,12 @@ def _extract_rule_based(text: str) -> dict[str, Any]:
         extracted["base_conditions"]["remain_days"] = int(m_days.group(1))
 
     # 위치/브랜드
-    if m_loc := _LOCATION_RE.search(text):
-        extracted["base_conditions"]["location"] = m_loc.group(1).strip()
+    for m_loc in _LOCATION_RE.finditer(text):
+        loc_cand = m_loc.group(1).strip()
+        if any(loc_cand.endswith(bad) for bad in _NON_LOCATION_SUFFIXES):
+            continue
+        extracted["base_conditions"]["location"] = loc_cand
+        break
     brands = [b for b in _KNOWN_BRANDS if b.lower() in lower]
     if brands:
         extracted["preferences"]["brands"] = brands
@@ -213,13 +220,17 @@ def analyze_node(state: AgentState) -> dict[str, Any]:
     if llm_called:
         llm_calls += 1
 
-    # F3010: 같은 모드 후속 요청은 직전 맥락을 유지하되, 다른 모드로 전환 시 이전 턴 전용 제약을 초기화
+    # F3010: 같은 모드 후속 요청은 직전 맥락을 유지하되, item_swap 이후에는 직전 실행 모드(base_mode)로 복귀
     prev_mode = prev_ctx.get("mode")
-    explicit_mode = refined.get("mode")
-    mode = explicit_mode or prev_mode or "cvs_instant"
-    mode_switched = bool(
-        explicit_mode and prev_mode and explicit_mode != prev_mode and explicit_mode != "item_swap"
+    base_mode = prev_ctx.get("base_mode") or (
+        prev_mode if prev_mode in {"online_bulk", "cvs_instant", "cheating_recovery"} else "cvs_instant"
     )
+    explicit_mode = refined.get("mode")
+    mode = explicit_mode or base_mode
+    mode_switched = bool(
+        explicit_mode and prev_mode and explicit_mode != base_mode and explicit_mode != "item_swap"
+    )
+    next_base_mode = mode if mode in {"online_bulk", "cvs_instant", "cheating_recovery"} else base_mode
 
     profile = {**profile, **refined.get("profile_updates", {})}
     if mode_switched:
@@ -230,6 +241,11 @@ def analyze_node(state: AgentState) -> dict[str, Any]:
         base_conditions = {**prev_ctx.get("base_conditions", {}), **refined.get("base_conditions", {})}
         preferences = {**prev_ctx.get("preferences", {}), **refined.get("preferences", {})}
         constraints = {**prev_ctx.get("constraints", {}), **refined.get("constraints", {})}
+
+    if mode != "item_swap":
+        base_conditions.pop("swap_target", None)
+    elif "swap_target" not in refined.get("base_conditions", {}):
+        base_conditions.pop("swap_target", None)
 
     # 명시적 테스트 쿼리 및 커피 요청 플래그는 현재 턴에만 유지
     if "explicit_query" not in refined.get("preferences", {}):
@@ -279,6 +295,8 @@ def analyze_node(state: AgentState) -> dict[str, Any]:
             missing.append("복구 잔여 일수(예: 3일)")
         if not profile.get("weight_kg"):
             missing.append("현재 체중(kg)")
+        if not profile.get("gender"):
+            missing.append("성별(남성/여성)")
     elif mode == "item_swap":
         if not previous_combo.get("selected_items"):
             missing.append("교체할 기존 식단 조합(먼저 식단 추천을 받아주세요)")
@@ -326,6 +344,7 @@ def analyze_node(state: AgentState) -> dict[str, Any]:
 
     return {
         "mode": mode,
+        "base_mode": next_base_mode,
         "profile": profile,
         "base_conditions": base_conditions,
         "preferences": preferences,
@@ -343,7 +362,7 @@ def plan_node(state: AgentState) -> dict[str, Any]:
     """F3006, F3009, F3021: 작업 목록(task_list) 수립 및 검증 실패 시 재계획."""
     session_id = state["session_id"]
     run_id = state["run_id"]
-    mode = state.get("mode", "B")
+    mode = state.get("mode", "cvs_instant")
     replan_count = int(state.get("replan_count", 0))
     max_replan = int(state.get("max_replan", get_settings().max_replan))
     trace = list(state.get("execution_trace", []))
@@ -370,23 +389,6 @@ def plan_node(state: AgentState) -> dict[str, Any]:
         )
         trace.append({"step": "replan", "replan_count": replan_count, "reason": reason_text})
 
-        if replan_count > max_replan:
-            event_bus.publish(
-                AgentEvent(
-                    session_id,
-                    run_id,
-                    "node_exit",
-                    "PlannerAgent",
-                    "planner_plan",
-                    {"stopped": "MAX_REPLAN_REACHED"},
-                )
-            )
-            return {
-                "replan_count": replan_count,
-                "task_list": [],
-                "execution_trace": trace,
-            }
-
     prefs = state.get("preferences", {})
     cond = state.get("base_conditions", {})
     cons = dict(state.get("constraints", {}))
@@ -405,11 +407,12 @@ def plan_node(state: AgentState) -> dict[str, Any]:
         )
     else:
         use_mock = get_settings().use_mock
+        query_mode = state.get("base_mode", mode) if mode == "item_swap" else mode
         # 실시간 API AND 검색 호환을 위해 품목별 짧은 검색어 목록으로 분할 구성
         if prefs.get("explicit_query"):
             nut_queries = [prefs["explicit_query"]]
-        elif mode == "online_bulk":
-            nut_queries = ["삶은계란", "찌개두부", "참치", "현미", "두유"] if not use_mock else ["닭가슴살", "현미", "오트밀", "프로틴", "참치"]
+        elif query_mode == "online_bulk":
+            nut_queries = ["삶은계란", "찌개두부", "참치", "현미", "두유"] if not use_mock else ["닭가슴살", "현미", "오트밀", "프로틴", "참치", "달걀"]
             if replan_count >= 1:
                 nut_queries.extend(["두부", "아몬드"])
         else:
@@ -425,7 +428,7 @@ def plan_node(state: AgentState) -> dict[str, Any]:
 
         if prefs.get("explicit_shop_query"):
             shop_queries = [prefs["explicit_shop_query"]]
-        elif mode == "online_bulk":
+        elif query_mode == "online_bulk":
             shop_queries = ["참치", "현미", "계란", "두유"] + (["닭가슴살", "오트밀", "프로틴"] if use_mock else [])
         else:
             shop_queries = ["계란", "두부", "두유", "참치"] + (["닭가슴살", "탄산수"] if use_mock else [])
@@ -449,7 +452,7 @@ def plan_node(state: AgentState) -> dict[str, Any]:
                 {
                     "task_id": f"t_shopping_{idx}",
                     "tool_name": "search_product_price",
-                    "args": {"query": sq, "mode": mode, "display": 8},
+                    "args": {"query": sq, "mode": query_mode, "display": 8},
                     "fixed_args": [],
                     "depends_on": [],
                 }

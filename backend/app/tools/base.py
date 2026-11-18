@@ -6,9 +6,20 @@ import functools
 from dataclasses import dataclass
 from typing import Any, Callable
 
+import requests
 from pydantic import BaseModel
 
 from app.config import redact_secrets
+
+_ORIG_REQUESTS_GET = requests.get
+_HTTP_SESSION = requests.Session()
+
+
+def http_get(url: str, **kwargs: Any) -> requests.Response:
+    """연결 재사용(Session)을 쓰되, 테스트에서 requests.get이 패치되면 그대로 따른다."""
+    if requests.get is not _ORIG_REQUESTS_GET:
+        return requests.get(url, **kwargs)
+    return _HTTP_SESSION.get(url, **kwargs)
 
 
 class ErrorCode:
