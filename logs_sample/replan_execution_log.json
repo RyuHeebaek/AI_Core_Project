@@ -4,7 +4,7 @@
     {
       "id": 41,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 1,
       "event_type": "node_enter",
       "agent_name": "PlannerAgent",
@@ -12,12 +12,12 @@
       "payload": {
         "user_message": "강남역 근처 편의점 8000원 이하 고단백 한끼 추천해줘"
       },
-      "created_at": "2026-11-18T14:03:03.948696+00:00"
+      "created_at": "2026-11-18T14:31:45.008869+00:00"
     },
     {
       "id": 42,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 2,
       "event_type": "llm_decision",
       "agent_name": "PlannerAgent",
@@ -25,15 +25,15 @@
       "payload": {
         "mode": "cvs_instant",
         "reason": "규칙 기반 조건 추출 완료",
-        "llm_called": false,
+        "llm_called": true,
         "missing": []
       },
-      "created_at": "2026-11-18T14:03:03.953247+00:00"
+      "created_at": "2026-11-18T14:31:45.410573+00:00"
     },
     {
       "id": 43,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 3,
       "event_type": "node_exit",
       "agent_name": "PlannerAgent",
@@ -42,12 +42,12 @@
         "mode": "cvs_instant",
         "clarification_needed": false
       },
-      "created_at": "2026-11-18T14:03:03.956487+00:00"
+      "created_at": "2026-11-18T14:31:45.418317+00:00"
     },
     {
       "id": 44,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 4,
       "event_type": "node_enter",
       "agent_name": "PlannerAgent",
@@ -56,12 +56,12 @@
         "is_replan": false,
         "replan_count": 0
       },
-      "created_at": "2026-11-18T14:03:03.960415+00:00"
+      "created_at": "2026-11-18T14:31:45.427910+00:00"
     },
     {
       "id": 45,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 5,
       "event_type": "planner_worker_msg",
       "agent_name": "PlannerAgent",
@@ -145,12 +145,12 @@
           }
         ]
       },
-      "created_at": "2026-11-18T14:03:03.964217+00:00"
+      "created_at": "2026-11-18T14:31:45.434269+00:00"
     },
     {
       "id": 46,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 6,
       "event_type": "node_exit",
       "agent_name": "PlannerAgent",
@@ -158,12 +158,12 @@
       "payload": {
         "task_count": 14
       },
-      "created_at": "2026-11-18T14:03:03.967741+00:00"
+      "created_at": "2026-11-18T14:31:45.443375+00:00"
     },
     {
       "id": 47,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 7,
       "event_type": "node_enter",
       "agent_name": "WorkerAgent",
@@ -171,12 +171,12 @@
       "payload": {
         "task_count": 14
       },
-      "created_at": "2026-11-18T14:03:03.971641+00:00"
+      "created_at": "2026-11-18T14:31:45.446389+00:00"
     },
     {
       "id": 48,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 8,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -189,12 +189,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.975440+00:00"
+      "created_at": "2026-11-18T14:31:45.449409+00:00"
     },
     {
       "id": 49,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 9,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -207,15 +207,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 2.1,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.975524+00:00"
+      "created_at": "2026-11-18T14:31:45.451474+00:00"
     },
     {
       "id": 50,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 10,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -228,12 +228,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.975603+00:00"
+      "created_at": "2026-11-18T14:31:45.449801+00:00"
     },
     {
       "id": 51,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 11,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -246,15 +246,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 2.6,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.975708+00:00"
+      "created_at": "2026-11-18T14:31:45.452415+00:00"
     },
     {
       "id": 52,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 12,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -267,12 +267,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.975727+00:00"
+      "created_at": "2026-11-18T14:31:45.450271+00:00"
     },
     {
       "id": 53,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 13,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -285,15 +285,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 1.7,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.975810+00:00"
+      "created_at": "2026-11-18T14:31:45.451988+00:00"
     },
     {
       "id": 54,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 14,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -306,12 +306,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.975922+00:00"
+      "created_at": "2026-11-18T14:31:45.450917+00:00"
     },
     {
       "id": 55,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 15,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -324,15 +324,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 2.6,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.975989+00:00"
+      "created_at": "2026-11-18T14:31:45.453547+00:00"
     },
     {
       "id": 56,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 16,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -345,12 +345,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.975997+00:00"
+      "created_at": "2026-11-18T14:31:45.451490+00:00"
     },
     {
       "id": 57,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 17,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -363,15 +363,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.0,
+        "elapsed_ms": 2.3,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.976042+00:00"
+      "created_at": "2026-11-18T14:31:45.453819+00:00"
     },
     {
       "id": 58,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 18,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -384,12 +384,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.976052+00:00"
+      "created_at": "2026-11-18T14:31:45.451999+00:00"
     },
     {
       "id": 59,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 19,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -402,15 +402,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.0,
+        "elapsed_ms": 1.7,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.976093+00:00"
+      "created_at": "2026-11-18T14:31:45.453666+00:00"
     },
     {
       "id": 60,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 20,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -424,12 +424,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.976167+00:00"
+      "created_at": "2026-11-18T14:31:45.452429+00:00"
     },
     {
       "id": 61,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 21,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -442,15 +442,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 0.9,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.976246+00:00"
+      "created_at": "2026-11-18T14:31:45.453306+00:00"
     },
     {
       "id": 62,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 22,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -464,12 +464,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.976252+00:00"
+      "created_at": "2026-11-18T14:31:45.453342+00:00"
     },
     {
       "id": 63,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 23,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -482,15 +482,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 1.3,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.976311+00:00"
+      "created_at": "2026-11-18T14:31:45.454629+00:00"
     },
     {
       "id": 64,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 24,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -504,12 +504,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.976316+00:00"
+      "created_at": "2026-11-18T14:31:45.453560+00:00"
     },
     {
       "id": 65,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 25,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -522,15 +522,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 2.0,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.976368+00:00"
+      "created_at": "2026-11-18T14:31:45.455602+00:00"
     },
     {
       "id": 66,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 26,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -544,12 +544,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.976436+00:00"
+      "created_at": "2026-11-18T14:31:45.453673+00:00"
     },
     {
       "id": 67,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 27,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -562,15 +562,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 3.2,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.976526+00:00"
+      "created_at": "2026-11-18T14:31:45.456908+00:00"
     },
     {
       "id": 68,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 28,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -584,12 +584,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.976537+00:00"
+      "created_at": "2026-11-18T14:31:45.453827+00:00"
     },
     {
       "id": 69,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 29,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -602,15 +602,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 3.8,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.976629+00:00"
+      "created_at": "2026-11-18T14:31:45.457631+00:00"
     },
     {
       "id": 70,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 30,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -624,12 +624,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.976637+00:00"
+      "created_at": "2026-11-18T14:31:45.454647+00:00"
     },
     {
       "id": 71,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 31,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -642,15 +642,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 3.5,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.976692+00:00"
+      "created_at": "2026-11-18T14:31:45.458162+00:00"
     },
     {
       "id": 72,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 32,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -668,12 +668,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.976702+00:00"
+      "created_at": "2026-11-18T14:31:45.455623+00:00"
     },
     {
       "id": 73,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 33,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -686,15 +686,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.0,
+        "elapsed_ms": 1.4,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.976732+00:00"
+      "created_at": "2026-11-18T14:31:45.457004+00:00"
     },
     {
       "id": 74,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 34,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -712,12 +712,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:04.045215+00:00"
+      "created_at": "2026-11-18T14:31:45.513795+00:00"
     },
     {
       "id": 75,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 35,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -735,12 +735,12 @@
         "elapsed_ms": 0.0,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:04.045234+00:00"
+      "created_at": "2026-11-18T14:31:45.513817+00:00"
     },
     {
       "id": 76,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 36,
       "event_type": "node_exit",
       "agent_name": "WorkerAgent",
@@ -750,12 +750,12 @@
         "escalation_count": 0,
         "fatal": false
       },
-      "created_at": "2026-11-18T14:03:04.050234+00:00"
+      "created_at": "2026-11-18T14:31:45.518173+00:00"
     },
     {
       "id": 77,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 37,
       "event_type": "node_enter",
       "agent_name": "NutritionValidatorAgent",
@@ -763,12 +763,12 @@
       "payload": {
         "mode": "cvs_instant"
       },
-      "created_at": "2026-11-18T14:03:04.052596+00:00"
+      "created_at": "2026-11-18T14:31:45.520958+00:00"
     },
     {
       "id": 78,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 38,
       "event_type": "node_exit",
       "agent_name": "NutritionValidatorAgent",
@@ -780,12 +780,12 @@
         ],
         "stage2_errors": []
       },
-      "created_at": "2026-11-18T14:03:04.054766+00:00"
+      "created_at": "2026-11-18T14:31:45.522986+00:00"
     },
     {
       "id": 79,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 39,
       "event_type": "node_enter",
       "agent_name": "PlannerAgent",
@@ -794,12 +794,12 @@
         "is_replan": true,
         "replan_count": 0
       },
-      "created_at": "2026-11-18T14:03:04.057302+00:00"
+      "created_at": "2026-11-18T14:31:45.525910+00:00"
     },
     {
       "id": 80,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 40,
       "event_type": "replan",
       "agent_name": "PlannerAgent",
@@ -809,12 +809,12 @@
         "max_replan": 3,
         "reason": "HIGH_SODIUM: 나트륨 상한 초과(1680.0mg > 1500mg)"
       },
-      "created_at": "2026-11-18T14:03:04.060006+00:00"
+      "created_at": "2026-11-18T14:31:45.528160+00:00"
     },
     {
       "id": 81,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 41,
       "event_type": "planner_worker_msg",
       "agent_name": "PlannerAgent",
@@ -918,12 +918,12 @@
           }
         ]
       },
-      "created_at": "2026-11-18T14:03:04.062788+00:00"
+      "created_at": "2026-11-18T14:31:45.530374+00:00"
     },
     {
       "id": 82,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 42,
       "event_type": "node_exit",
       "agent_name": "PlannerAgent",
@@ -931,12 +931,12 @@
       "payload": {
         "task_count": 18
       },
-      "created_at": "2026-11-18T14:03:04.065722+00:00"
+      "created_at": "2026-11-18T14:31:45.532708+00:00"
     },
     {
       "id": 83,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 43,
       "event_type": "node_enter",
       "agent_name": "WorkerAgent",
@@ -944,12 +944,12 @@
       "payload": {
         "task_count": 18
       },
-      "created_at": "2026-11-18T14:03:04.068962+00:00"
+      "created_at": "2026-11-18T14:31:45.535232+00:00"
     },
     {
       "id": 84,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 44,
       "event_type": "tool_cache_hit",
       "agent_name": "WorkerAgent",
@@ -958,12 +958,12 @@
         "tool_name": "search_nutrition_db",
         "cache_key": "search_nutrition_db:{\"limit\": 20, \"query\": \"닭가슴살\"}"
       },
-      "created_at": "2026-11-18T14:03:04.072378+00:00"
+      "created_at": "2026-11-18T14:31:45.541699+00:00"
     },
     {
       "id": 85,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 45,
       "event_type": "tool_cache_hit",
       "agent_name": "WorkerAgent",
@@ -972,12 +972,12 @@
         "tool_name": "search_nutrition_db",
         "cache_key": "search_nutrition_db:{\"limit\": 20, \"query\": \"달걀\"}"
       },
-      "created_at": "2026-11-18T14:03:04.075076+00:00"
+      "created_at": "2026-11-18T14:31:45.544147+00:00"
     },
     {
       "id": 86,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 46,
       "event_type": "tool_cache_hit",
       "agent_name": "WorkerAgent",
@@ -986,12 +986,12 @@
         "tool_name": "search_nutrition_db",
         "cache_key": "search_nutrition_db:{\"limit\": 20, \"query\": \"두부\"}"
       },
-      "created_at": "2026-11-18T14:03:04.077421+00:00"
+      "created_at": "2026-11-18T14:31:45.546325+00:00"
     },
     {
       "id": 87,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 47,
       "event_type": "tool_cache_hit",
       "agent_name": "WorkerAgent",
@@ -1000,12 +1000,12 @@
         "tool_name": "search_nutrition_db",
         "cache_key": "search_nutrition_db:{\"limit\": 20, \"query\": \"두유\"}"
       },
-      "created_at": "2026-11-18T14:03:04.079776+00:00"
+      "created_at": "2026-11-18T14:31:45.548249+00:00"
     },
     {
       "id": 88,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 48,
       "event_type": "tool_cache_hit",
       "agent_name": "WorkerAgent",
@@ -1014,12 +1014,12 @@
         "tool_name": "search_nutrition_db",
         "cache_key": "search_nutrition_db:{\"limit\": 20, \"query\": \"탄산수\"}"
       },
-      "created_at": "2026-11-18T14:03:04.082388+00:00"
+      "created_at": "2026-11-18T14:31:45.550035+00:00"
     },
     {
       "id": 89,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 49,
       "event_type": "tool_cache_hit",
       "agent_name": "WorkerAgent",
@@ -1028,12 +1028,12 @@
         "tool_name": "search_nutrition_db",
         "cache_key": "search_nutrition_db:{\"limit\": 20, \"query\": \"참치\"}"
       },
-      "created_at": "2026-11-18T14:03:04.085237+00:00"
+      "created_at": "2026-11-18T14:31:45.552493+00:00"
     },
     {
       "id": 90,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 50,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -1046,12 +1046,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:04.071783+00:00"
+      "created_at": "2026-11-18T14:31:45.537455+00:00"
     },
     {
       "id": 91,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 51,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -1064,15 +1064,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 2.5,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:04.071868+00:00"
+      "created_at": "2026-11-18T14:31:45.540003+00:00"
     },
     {
       "id": 92,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 52,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -1085,12 +1085,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:04.071927+00:00"
+      "created_at": "2026-11-18T14:31:45.537883+00:00"
     },
     {
       "id": 93,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 53,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -1103,15 +1103,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 2.6,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:04.071981+00:00"
+      "created_at": "2026-11-18T14:31:45.540463+00:00"
     },
     {
       "id": 94,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 54,
       "event_type": "tool_cache_hit",
       "agent_name": "WorkerAgent",
@@ -1120,12 +1120,12 @@
         "tool_name": "search_product_price",
         "cache_key": "search_product_price:{\"display\": 8, \"mode\": \"cvs_instant\", \"query\": \"계란\"}"
       },
-      "created_at": "2026-11-18T14:03:04.096490+00:00"
+      "created_at": "2026-11-18T14:31:45.562833+00:00"
     },
     {
       "id": 95,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 55,
       "event_type": "tool_cache_hit",
       "agent_name": "WorkerAgent",
@@ -1134,12 +1134,12 @@
         "tool_name": "search_product_price",
         "cache_key": "search_product_price:{\"display\": 8, \"mode\": \"cvs_instant\", \"query\": \"두부\"}"
       },
-      "created_at": "2026-11-18T14:03:04.098744+00:00"
+      "created_at": "2026-11-18T14:31:45.565134+00:00"
     },
     {
       "id": 96,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 56,
       "event_type": "tool_cache_hit",
       "agent_name": "WorkerAgent",
@@ -1148,12 +1148,12 @@
         "tool_name": "search_product_price",
         "cache_key": "search_product_price:{\"display\": 8, \"mode\": \"cvs_instant\", \"query\": \"두유\"}"
       },
-      "created_at": "2026-11-18T14:03:04.101143+00:00"
+      "created_at": "2026-11-18T14:31:45.567585+00:00"
     },
     {
       "id": 97,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 57,
       "event_type": "tool_cache_hit",
       "agent_name": "WorkerAgent",
@@ -1162,12 +1162,12 @@
         "tool_name": "search_product_price",
         "cache_key": "search_product_price:{\"display\": 8, \"mode\": \"cvs_instant\", \"query\": \"참치\"}"
       },
-      "created_at": "2026-11-18T14:03:04.103939+00:00"
+      "created_at": "2026-11-18T14:31:45.569763+00:00"
     },
     {
       "id": 98,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 58,
       "event_type": "tool_cache_hit",
       "agent_name": "WorkerAgent",
@@ -1176,12 +1176,12 @@
         "tool_name": "search_product_price",
         "cache_key": "search_product_price:{\"display\": 8, \"mode\": \"cvs_instant\", \"query\": \"닭가슴살\"}"
       },
-      "created_at": "2026-11-18T14:03:04.106843+00:00"
+      "created_at": "2026-11-18T14:31:45.571894+00:00"
     },
     {
       "id": 99,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 59,
       "event_type": "tool_cache_hit",
       "agent_name": "WorkerAgent",
@@ -1190,12 +1190,12 @@
         "tool_name": "search_product_price",
         "cache_key": "search_product_price:{\"display\": 8, \"mode\": \"cvs_instant\", \"query\": \"탄산수\"}"
       },
-      "created_at": "2026-11-18T14:03:04.109475+00:00"
+      "created_at": "2026-11-18T14:31:45.574180+00:00"
     },
     {
       "id": 100,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 60,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -1209,12 +1209,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:04.071988+00:00"
+      "created_at": "2026-11-18T14:31:45.538528+00:00"
     },
     {
       "id": 101,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 61,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -1227,15 +1227,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 1.9,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:04.072063+00:00"
+      "created_at": "2026-11-18T14:31:45.540387+00:00"
     },
     {
       "id": 102,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 62,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -1249,12 +1249,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:04.072126+00:00"
+      "created_at": "2026-11-18T14:31:45.539462+00:00"
     },
     {
       "id": 103,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 63,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -1267,15 +1267,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 2.1,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:04.072224+00:00"
+      "created_at": "2026-11-18T14:31:45.541548+00:00"
     },
     {
       "id": 104,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 64,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -1293,12 +1293,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:04.072234+00:00"
+      "created_at": "2026-11-18T14:31:45.540023+00:00"
     },
     {
       "id": 105,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 65,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -1311,15 +1311,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.0,
+        "elapsed_ms": 1.3,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:04.072268+00:00"
+      "created_at": "2026-11-18T14:31:45.541332+00:00"
     },
     {
       "id": 106,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 66,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -1337,12 +1337,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:04.122693+00:00"
+      "created_at": "2026-11-18T14:31:45.588353+00:00"
     },
     {
       "id": 107,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 67,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -1361,12 +1361,12 @@
         "elapsed_ms": 1.8,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:04.124509+00:00"
+      "created_at": "2026-11-18T14:31:45.590197+00:00"
     },
     {
       "id": 108,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 68,
       "event_type": "node_exit",
       "agent_name": "WorkerAgent",
@@ -1376,12 +1376,12 @@
         "escalation_count": 0,
         "fatal": false
       },
-      "created_at": "2026-11-18T14:03:04.130295+00:00"
+      "created_at": "2026-11-18T14:31:45.594924+00:00"
     },
     {
       "id": 109,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 69,
       "event_type": "node_enter",
       "agent_name": "NutritionValidatorAgent",
@@ -1389,12 +1389,12 @@
       "payload": {
         "mode": "cvs_instant"
       },
-      "created_at": "2026-11-18T14:03:04.133285+00:00"
+      "created_at": "2026-11-18T14:31:45.597425+00:00"
     },
     {
       "id": 110,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 70,
       "event_type": "node_exit",
       "agent_name": "NutritionValidatorAgent",
@@ -1404,12 +1404,12 @@
         "stage1_errors": [],
         "stage2_errors": []
       },
-      "created_at": "2026-11-18T14:03:04.136291+00:00"
+      "created_at": "2026-11-18T14:31:46.006629+00:00"
     },
     {
       "id": 111,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 71,
       "event_type": "node_enter",
       "agent_name": "ResponderAgent",
@@ -1417,12 +1417,12 @@
       "payload": {
         "mode": "cvs_instant"
       },
-      "created_at": "2026-11-18T14:03:04.139765+00:00"
+      "created_at": "2026-11-18T14:31:46.017554+00:00"
     },
     {
       "id": 112,
       "session_id": "sc2",
-      "run_id": "f1edb92c4b94",
+      "run_id": "33e8f95603ec",
       "seq": 72,
       "event_type": "node_exit",
       "agent_name": "ResponderAgent",
@@ -1430,7 +1430,7 @@
       "payload": {
         "reply_length": 1473
       },
-      "created_at": "2026-11-18T14:03:04.142861+00:00"
+      "created_at": "2026-11-18T14:31:46.023146+00:00"
     }
   ],
   "latest_anomaly": {
@@ -1438,12 +1438,12 @@
     "warnings": [],
     "diagnosis": null,
     "llm_called": false,
-    "created_at": "2026-11-18T14:03:04.150015+00:00"
+    "created_at": "2026-11-18T14:31:46.033942+00:00"
   },
   "chat_response_summary": {
     "mode": "cvs_instant",
     "replan_count": 1,
-    "llm_calls_count": 0,
+    "llm_calls_count": 2,
     "validation_result": {
       "passed": true,
       "stage1_errors": [],

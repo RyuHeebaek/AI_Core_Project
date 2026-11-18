@@ -2,7 +2,7 @@
   "session_id": "sc_anomaly",
   "events": [
     {
-      "id": 311,
+      "id": 329,
       "session_id": "sc_anomaly",
       "run_id": "run_anom",
       "seq": 1,
@@ -12,10 +12,10 @@
       "payload": {
         "mode": "cvs_instant"
       },
-      "created_at": "2026-11-18T14:03:04.662682+00:00"
+      "created_at": "2026-11-18T14:31:48.883472+00:00"
     },
     {
-      "id": 312,
+      "id": 330,
       "session_id": "sc_anomaly",
       "run_id": "run_anom",
       "seq": 2,
@@ -30,10 +30,10 @@
           }
         ]
       },
-      "created_at": "2026-11-18T14:03:04.663979+00:00"
+      "created_at": "2026-11-18T14:31:48.885383+00:00"
     },
     {
-      "id": 313,
+      "id": 331,
       "session_id": "sc_anomaly",
       "run_id": "run_anom",
       "seq": 3,
@@ -46,10 +46,10 @@
           "query": "닭가슴살"
         }
       },
-      "created_at": "2026-11-18T14:03:04.665191+00:00"
+      "created_at": "2026-11-18T14:31:48.886980+00:00"
     },
     {
-      "id": 314,
+      "id": 332,
       "session_id": "sc_anomaly",
       "run_id": "run_anom",
       "seq": 4,
@@ -62,10 +62,10 @@
           "query": "닭가슴살"
         }
       },
-      "created_at": "2026-11-18T14:03:04.666314+00:00"
+      "created_at": "2026-11-18T14:31:48.888474+00:00"
     },
     {
-      "id": 315,
+      "id": 333,
       "session_id": "sc_anomaly",
       "run_id": "run_anom",
       "seq": 5,
@@ -78,10 +78,10 @@
           "location": "강남역"
         }
       },
-      "created_at": "2026-11-18T14:03:04.667381+00:00"
+      "created_at": "2026-11-18T14:31:48.889652+00:00"
     },
     {
-      "id": 316,
+      "id": 334,
       "session_id": "sc_anomaly",
       "run_id": "run_anom",
       "seq": 6,
@@ -92,10 +92,10 @@
         "replan_count": 1,
         "reason": "BUDGET_EXCEEDED: 예산 초과"
       },
-      "created_at": "2026-11-18T14:03:04.668769+00:00"
+      "created_at": "2026-11-18T14:31:48.891244+00:00"
     },
     {
-      "id": 317,
+      "id": 335,
       "session_id": "sc_anomaly",
       "run_id": "run_anom",
       "seq": 7,
@@ -106,10 +106,10 @@
         "replan_count": 2,
         "reason": "BUDGET_EXCEEDED: 예산 초과"
       },
-      "created_at": "2026-11-18T14:03:04.670250+00:00"
+      "created_at": "2026-11-18T14:31:48.892847+00:00"
     },
     {
-      "id": 318,
+      "id": 336,
       "session_id": "sc_anomaly",
       "run_id": "run_anom",
       "seq": 8,
@@ -120,10 +120,10 @@
         "replan_count": 3,
         "reason": "BUDGET_EXCEEDED: 예산 초과"
       },
-      "created_at": "2026-11-18T14:03:04.671717+00:00"
+      "created_at": "2026-11-18T14:31:48.894339+00:00"
     },
     {
-      "id": 319,
+      "id": 337,
       "session_id": "sc_anomaly",
       "run_id": "run_anom",
       "seq": 9,
@@ -136,7 +136,7 @@
           "BUDGET_EXCEEDED: 예산 초과"
         ]
       },
-      "created_at": "2026-11-18T14:03:04.673056+00:00"
+      "created_at": "2026-11-18T14:31:48.895779+00:00"
     }
   ],
   "latest_anomaly": {
@@ -159,8 +159,8 @@
         "message": "최종 검증(NutritionValidatorAgent)을 통과하지 못한 상태로 종료되었습니다."
       }
     ],
-    "diagnosis": "WorkerAgent가 동일 파라미터로 search_nutrition_db를 중복 호출하고 계획 외 search_nearby_store를 실행했으며, PlannerAgent가 예산 불가 조건에서 재계획 상한(3회)에 도달했습니다. Worker 캐시 키 검증과 Planner의 task_list·예산 사전 가드레일을 점검하세요.",
+    "diagnosis": null,
     "llm_called": true,
-    "created_at": "2026-11-18T14:03:04.676189+00:00"
+    "created_at": "2026-11-18T14:31:49.333744+00:00"
   }
 }

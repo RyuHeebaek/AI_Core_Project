@@ -452,8 +452,9 @@ def _optimize_mode_a(
     for p_item, c_item in pairs:
         if c_item and p_item.get("food_id") == c_item.get("food_id"):
             continue
-        for p_qty in (1, 2):
-            combo_items = [_scale_serving_qty(p_item, p_qty)] + ([c_item] if c_item else [])
+        qty_pairs = ((1, 1), (2, 1), (1, 2), (2, 2), (1, 3)) if c_item else ((1, 1), (2, 1))
+        for p_qty, c_qty in qty_pairs:
+            combo_items = [_scale_serving_qty(p_item, p_qty)] + ([_scale_serving_qty(c_item, c_qty)] if c_item else [])
             summary = summarize_combo(combo_items)
             line_orders, checkout_total, weeks, total_meals = _build_bulk_orders(combo_items, base_conditions)
             errs = check_meal_constraints(
@@ -465,7 +466,7 @@ def _optimize_mode_a(
                 default_min_protein=20.0,
             )
             if errs:
-                if p_qty == 1:
+                if (p_qty, c_qty) == (1, 1):
                     excluded.append({"name": " + ".join(i["name"] for i in combo_items), "reason": "; ".join(errs)})
                 continue
 

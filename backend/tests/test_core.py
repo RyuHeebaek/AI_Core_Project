@@ -206,10 +206,23 @@ def test_chat_api_modes_memory_replan_and_swap():
     assert d_a["candidate_combo"]["shopping_summary"]["type"] == "online_bulk"
     second_item = d_a["candidate_combo"]["selected_items"][1]["name"]
     swap_kw = "계란" if "계란" in second_item else "오트밀" if "오트밀" in second_item else "현미"
-    r_a_swap = client.post("/api/chat", json={"session_id": "s4", "message": f"{swap_kw} 빼고 다른 걸로 바꿔줘"})
+    r_a_swap = client.post(
+        "/api/chat",
+        json={
+            "session_id": "s4",
+            "message": f"{swap_kw} 빼고 다른 걸로 바꿔줘",
+            "profile": {"gender": "male", "weight_kg": 75, "target_weight_kg": 70, "target_weeks": 4, "goal_type": "diet", "meals_per_day": 3},
+        },
+    )
     assert r_a_swap.json()["mode"] == "item_swap"
     assert r_a_swap.json()["validation_result"]["passed"] is True
     assert r_a_swap.json()["candidate_combo"]["shopping_summary"]["type"] == "online_bulk"
+    assert r_a_swap.json()["candidate_combo"]["reverse_calc"]["meals_per_day"] == 2
+
+    # 유당불내증(lactose_free) 상태에서도 모드 A 대량 장바구니 조합이 성립하는지 검증
+    r_a_lf = client.post("/api/chat", json={"session_id": "s4_lf", "message": "유당불내증 제외 4주 하루 2끼 15만원 이하 온라인 대량 장바구니 짜줘"})
+    assert r_a_lf.json()["validation_result"]["passed"] is True
+    assert all(not it.get("has_lactose") for it in r_a_lf.json()["candidate_combo"]["selected_items"])
 
     # 7) 모드 C(cheating_recovery) 치팅데이 복구 — 성별 누락 시 되묻기, 포함 시 실제 복구 역산 검증
     r_c_missing = client.post(
@@ -784,6 +797,19 @@ def test_audit_regressions_parsers_matching_regex_and_cache(monkeypatch):
     assert not analyzed["constraints"].get("lactose_free")
     assert analyzed["base_conditions"].get("location") == "강남역"
     assert analyzed["constraints"].get("budget_krw") == 8000
+
+    # 되묻기 응답(치팅 복구 키워드 미반복)에서도 초과 칼로리 인식 확인
+    c_clar = client.post("/api/chat", json={"session_id": "s_cclar", "message": "치팅 복구 식단 짜줘"})
+    assert c_clar.json()["clarification_needed"] is True
+    c_ans = client.post("/api/chat", json={"session_id": "s_cclar", "message": "남성 75kg 어제 1200kcal 3일"})
+    assert c_ans.json()["clarification_needed"] is False and c_ans.json()["validation_result"]["passed"] is True
+
+    # 실API 임의 품목명("달걀_삶은것_노른자" 등)을 포함한 [1:1 교체] 발화도 swap_target으로 인식
+    swap_live_name = analyze_node({
+        "session_id": "s_live_swap", "run_id": "rl1", "user_message": "특수재료_123 빼고 다른 걸로 바꿔줘",
+        "previous_combo": {"selected_items": [{"name": "특수재료_123", "category": "sub"}]},
+    })
+    assert swap_live_name["mode"] == "item_swap" and swap_live_name["base_conditions"]["swap_target"] == "특수재료_123"
 
     # #5, #8: getProductPriceInfoSvc의 HTTP 200 에러 XML 비캐싱 & 동시 콜드스타트 시 카탈로그 1회만 다운로드
     clear_price_caches()

@@ -153,8 +153,12 @@ def run_all_scenarios(export_dir: Path | None = None) -> list[dict[str, Any]]:
             results.append(d5)
 
             # F3019/NF3003: USE_MOCK=false + API 키 누락 시 서버 비정상 종료 없이 MISSING_API_KEY 반환
-            prev_mock = os.environ.get("USE_MOCK", "true")
+            env_keys = ("USE_MOCK", "OPENAI_API_KEY", "DATA_GO_KR_API_KEY", "KAKAO_REST_API_KEY")
+            saved_env = {k: os.environ.get(k) for k in env_keys}
             os.environ["USE_MOCK"] = "false"
+            os.environ["OPENAI_API_KEY"] = ""
+            os.environ["DATA_GO_KR_API_KEY"] = ""
+            os.environ["KAKAO_REST_API_KEY"] = ""
             try:
                 r_nokey = client.post("/api/chat", json={"session_id": "sc_nokey", "message": "강남역 편의점 8000원 이하 한끼"})
                 d_nokey = r_nokey.json()
@@ -163,7 +167,11 @@ def run_all_scenarios(export_dir: Path | None = None) -> list[dict[str, Any]]:
                 assert "MISSING_API_KEY" in (d_nokey.get("error_notice") or "")
                 print(f"[F3019: 무키 안전응답] status={r_nokey.status_code} | error_notice={d_nokey['error_notice']}")
             finally:
-                os.environ["USE_MOCK"] = prev_mock
+                for k, v in saved_env.items():
+                    if v is None:
+                        os.environ.pop(k, None)
+                    else:
+                        os.environ[k] = v
 
             if export_dir is not None:
                 export_dir.mkdir(parents=True, exist_ok=True)

@@ -58,20 +58,31 @@ function getSessionId() {
 }
 
 function getProfilePayload() {
+  const targetWeightVal = document.getElementById("profTargetWeight").value.trim();
+  const weeksVal = document.getElementById("profWeeks").value.trim();
   const budgetVal = document.getElementById("profBudget").value.trim();
   return {
     gender: document.getElementById("profGender").value,
     weight_kg: Number(document.getElementById("profWeight").value),
-    target_weight_kg: Number(document.getElementById("profTargetWeight").value),
-    target_weeks: Number(document.getElementById("profWeeks").value),
+    target_weight_kg: targetWeightVal !== "" ? Number(targetWeightVal) : null,
+    target_weeks: weeksVal !== "" ? Number(weeksVal) : null,
     goal_type: document.getElementById("profGoal").value,
-    meals_per_day: Number(document.getElementById("profMeals").value),
-    budget_krw: budgetVal ? Number(budgetVal) : null,
+    meals_per_day: Number(document.getElementById("profMeals").value) || 3,
+    budget_krw: budgetVal !== "" ? Number(budgetVal) : null,
     lactose_free: document.getElementById("chkLactose").checked,
     low_sugar: document.getElementById("chkLowSugar").checked,
     no_caffeine_after_18: document.getElementById("chkNoCaff").checked,
   };
 }
+
+document.getElementById("sessionIdInput").addEventListener("change", () => {
+  lastChatResult = null;
+  renderSwapBar([]);
+  document.getElementById("savePlanBox").classList.add("hidden");
+  document.getElementById("profileResult").textContent = "";
+  showBanner("planOverlapNotice", "");
+  showBanner("chatErrorBanner", "");
+});
 
 // 탭 전환
 document.querySelectorAll(".tab-btn").forEach((btn) => {
@@ -207,6 +218,7 @@ function renderSwapBar(items) {
 async function sendChatMessage(msg) {
   if (!msg) return;
   showBanner("chatErrorBanner", "");
+  showBanner("planOverlapNotice", "");
   appendMessage("user", msg);
   const loadingEl = appendMessage("loading", "Agent가 계획을 수립하고 Tool을 실행 중입니다...");
   const sendBtn = document.getElementById("sendBtn");
@@ -222,6 +234,7 @@ async function sendChatMessage(msg) {
         profile: profileSavedSessionId === getSessionId() ? getProfilePayload() : null,
       }),
     });
+    profileSavedSessionId = null;
     loadingEl.remove();
     appendMessage("bot", data.reply);
     renderTimeline(data);

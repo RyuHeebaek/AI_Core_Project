@@ -4,7 +4,7 @@
     {
       "id": 1,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 1,
       "event_type": "node_enter",
       "agent_name": "PlannerAgent",
@@ -12,12 +12,12 @@
       "payload": {
         "user_message": "강남역 근처 편의점 8000원 이하 고단백 한끼 추천해줘"
       },
-      "created_at": "2026-11-18T14:03:03.811132+00:00"
+      "created_at": "2026-11-18T14:31:43.940779+00:00"
     },
     {
       "id": 2,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 2,
       "event_type": "llm_decision",
       "agent_name": "PlannerAgent",
@@ -25,15 +25,15 @@
       "payload": {
         "mode": "cvs_instant",
         "reason": "규칙 기반 조건 추출 완료",
-        "llm_called": false,
+        "llm_called": true,
         "missing": []
       },
-      "created_at": "2026-11-18T14:03:03.816002+00:00"
+      "created_at": "2026-11-18T14:31:44.479133+00:00"
     },
     {
       "id": 3,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 3,
       "event_type": "node_exit",
       "agent_name": "PlannerAgent",
@@ -42,12 +42,12 @@
         "mode": "cvs_instant",
         "clarification_needed": false
       },
-      "created_at": "2026-11-18T14:03:03.819090+00:00"
+      "created_at": "2026-11-18T14:31:44.489902+00:00"
     },
     {
       "id": 4,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 4,
       "event_type": "node_enter",
       "agent_name": "PlannerAgent",
@@ -56,12 +56,12 @@
         "is_replan": false,
         "replan_count": 0
       },
-      "created_at": "2026-11-18T14:03:03.822903+00:00"
+      "created_at": "2026-11-18T14:31:44.497699+00:00"
     },
     {
       "id": 5,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 5,
       "event_type": "planner_worker_msg",
       "agent_name": "PlannerAgent",
@@ -145,12 +145,12 @@
           }
         ]
       },
-      "created_at": "2026-11-18T14:03:03.825288+00:00"
+      "created_at": "2026-11-18T14:31:44.500052+00:00"
     },
     {
       "id": 6,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 6,
       "event_type": "node_exit",
       "agent_name": "PlannerAgent",
@@ -158,12 +158,12 @@
       "payload": {
         "task_count": 14
       },
-      "created_at": "2026-11-18T14:03:03.827947+00:00"
+      "created_at": "2026-11-18T14:31:44.501790+00:00"
     },
     {
       "id": 7,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 7,
       "event_type": "node_enter",
       "agent_name": "WorkerAgent",
@@ -171,12 +171,12 @@
       "payload": {
         "task_count": 14
       },
-      "created_at": "2026-11-18T14:03:03.831283+00:00"
+      "created_at": "2026-11-18T14:31:44.504429+00:00"
     },
     {
       "id": 8,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 8,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -189,12 +189,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.834220+00:00"
+      "created_at": "2026-11-18T14:31:44.506732+00:00"
     },
     {
       "id": 9,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 9,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -207,15 +207,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 4.4,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.834369+00:00"
+      "created_at": "2026-11-18T14:31:44.511156+00:00"
     },
     {
       "id": 10,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 10,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -228,12 +228,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.834440+00:00"
+      "created_at": "2026-11-18T14:31:44.507052+00:00"
     },
     {
       "id": 11,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 11,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -246,15 +246,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 3.6,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.834507+00:00"
+      "created_at": "2026-11-18T14:31:44.510674+00:00"
     },
     {
       "id": 12,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 12,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -267,12 +267,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.834515+00:00"
+      "created_at": "2026-11-18T14:31:44.507225+00:00"
     },
     {
       "id": 13,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 13,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -285,15 +285,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.0,
+        "elapsed_ms": 3.1,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.834565+00:00"
+      "created_at": "2026-11-18T14:31:44.510284+00:00"
     },
     {
       "id": 14,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 14,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -306,12 +306,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.834636+00:00"
+      "created_at": "2026-11-18T14:31:44.507418+00:00"
     },
     {
       "id": 15,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 15,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -324,15 +324,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.0,
+        "elapsed_ms": 2.7,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.834680+00:00"
+      "created_at": "2026-11-18T14:31:44.510087+00:00"
     },
     {
       "id": 16,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 16,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -345,12 +345,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.834686+00:00"
+      "created_at": "2026-11-18T14:31:44.510104+00:00"
     },
     {
       "id": 17,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 17,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -363,15 +363,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.0,
+        "elapsed_ms": 2.2,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.834727+00:00"
+      "created_at": "2026-11-18T14:31:44.512329+00:00"
     },
     {
       "id": 18,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 18,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -384,12 +384,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.834797+00:00"
+      "created_at": "2026-11-18T14:31:44.510292+00:00"
     },
     {
       "id": 19,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 19,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -402,15 +402,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 1.6,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.834853+00:00"
+      "created_at": "2026-11-18T14:31:44.511946+00:00"
     },
     {
       "id": 20,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 20,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -424,12 +424,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.834861+00:00"
+      "created_at": "2026-11-18T14:31:44.510690+00:00"
     },
     {
       "id": 21,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 21,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -442,15 +442,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 1.5,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.834945+00:00"
+      "created_at": "2026-11-18T14:31:44.512184+00:00"
     },
     {
       "id": 22,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 22,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -464,12 +464,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.834952+00:00"
+      "created_at": "2026-11-18T14:31:44.511171+00:00"
     },
     {
       "id": 23,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 23,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -482,15 +482,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 1.9,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.835015+00:00"
+      "created_at": "2026-11-18T14:31:44.513119+00:00"
     },
     {
       "id": 24,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 24,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -504,12 +504,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.835082+00:00"
+      "created_at": "2026-11-18T14:31:44.511959+00:00"
     },
     {
       "id": 25,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 25,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -522,15 +522,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 1.8,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.835137+00:00"
+      "created_at": "2026-11-18T14:31:44.513806+00:00"
     },
     {
       "id": 26,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 26,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -544,12 +544,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.835144+00:00"
+      "created_at": "2026-11-18T14:31:44.512199+00:00"
     },
     {
       "id": 27,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 27,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -562,15 +562,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 3.9,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.835196+00:00"
+      "created_at": "2026-11-18T14:31:44.516141+00:00"
     },
     {
       "id": 28,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 28,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -584,12 +584,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.835201+00:00"
+      "created_at": "2026-11-18T14:31:44.512342+00:00"
     },
     {
       "id": 29,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 29,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -602,15 +602,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.1,
+        "elapsed_ms": 4.5,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.835276+00:00"
+      "created_at": "2026-11-18T14:31:44.516839+00:00"
     },
     {
       "id": 30,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 30,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -624,12 +624,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.835281+00:00"
+      "created_at": "2026-11-18T14:31:44.513138+00:00"
     },
     {
       "id": 31,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 31,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -642,15 +642,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.0,
+        "elapsed_ms": 4.3,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.835332+00:00"
+      "created_at": "2026-11-18T14:31:44.517462+00:00"
     },
     {
       "id": 32,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 32,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -668,12 +668,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.835337+00:00"
+      "created_at": "2026-11-18T14:31:44.513816+00:00"
     },
     {
       "id": 33,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 33,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -686,15 +686,15 @@
           "source_mode": "mock_fallback"
         },
         "error": null,
-        "elapsed_ms": 0.0,
+        "elapsed_ms": 2.2,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.835365+00:00"
+      "created_at": "2026-11-18T14:31:44.516013+00:00"
     },
     {
       "id": 34,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 34,
       "event_type": "tool_call_start",
       "agent_name": "WorkerAgent",
@@ -712,12 +712,12 @@
         },
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.912886+00:00"
+      "created_at": "2026-11-18T14:31:44.565514+00:00"
     },
     {
       "id": 35,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 35,
       "event_type": "tool_call_end",
       "agent_name": "WorkerAgent",
@@ -733,15 +733,15 @@
           "total_price_krw": 4500
         },
         "error": null,
-        "elapsed_ms": 1.0,
+        "elapsed_ms": 1.1,
         "is_retry": false
       },
-      "created_at": "2026-11-18T14:03:03.913858+00:00"
+      "created_at": "2026-11-18T14:31:44.566621+00:00"
     },
     {
       "id": 36,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 36,
       "event_type": "node_exit",
       "agent_name": "WorkerAgent",
@@ -751,12 +751,12 @@
         "escalation_count": 0,
         "fatal": false
       },
-      "created_at": "2026-11-18T14:03:03.918482+00:00"
+      "created_at": "2026-11-18T14:31:44.570266+00:00"
     },
     {
       "id": 37,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 37,
       "event_type": "node_enter",
       "agent_name": "NutritionValidatorAgent",
@@ -764,12 +764,12 @@
       "payload": {
         "mode": "cvs_instant"
       },
-      "created_at": "2026-11-18T14:03:03.921114+00:00"
+      "created_at": "2026-11-18T14:31:44.572116+00:00"
     },
     {
       "id": 38,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 38,
       "event_type": "node_exit",
       "agent_name": "NutritionValidatorAgent",
@@ -779,12 +779,12 @@
         "stage1_errors": [],
         "stage2_errors": []
       },
-      "created_at": "2026-11-18T14:03:03.923814+00:00"
+      "created_at": "2026-11-18T14:31:44.971019+00:00"
     },
     {
       "id": 39,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 39,
       "event_type": "node_enter",
       "agent_name": "ResponderAgent",
@@ -792,12 +792,12 @@
       "payload": {
         "mode": "cvs_instant"
       },
-      "created_at": "2026-11-18T14:03:03.926669+00:00"
+      "created_at": "2026-11-18T14:31:44.982436+00:00"
     },
     {
       "id": 40,
       "session_id": "sc1",
-      "run_id": "21e52c6fbe6f",
+      "run_id": "0d6daabc30cb",
       "seq": 40,
       "event_type": "node_exit",
       "agent_name": "ResponderAgent",
@@ -805,7 +805,7 @@
       "payload": {
         "reply_length": 1516
       },
-      "created_at": "2026-11-18T14:03:03.929311+00:00"
+      "created_at": "2026-11-18T14:31:44.987105+00:00"
     }
   ],
   "latest_anomaly": {
@@ -813,12 +813,12 @@
     "warnings": [],
     "diagnosis": null,
     "llm_called": false,
-    "created_at": "2026-11-18T14:03:03.935190+00:00"
+    "created_at": "2026-11-18T14:31:44.993036+00:00"
   },
   "chat_response_summary": {
     "mode": "cvs_instant",
     "replan_count": 0,
-    "llm_calls_count": 0,
+    "llm_calls_count": 2,
     "validation_result": {
       "passed": true,
       "stage1_errors": [],

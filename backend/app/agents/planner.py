@@ -44,10 +44,10 @@ def _parse_budget(text: str) -> int | None:
 
 
 _SWAP_TARGETS = (
-    "그릭요거트", "요거트", "감동란", "계란", "두부바", "두부", "닭가슴살",
-    "도시락", "샐러드", "아몬드 브리즈", "아몬드", "프로틴", "유청 단백질", "두유", "콜라", "오트밀",
-    "현미", "곤약밥", "참치", "바나나", "삼각김밥", "탄산수", "아메리카노",
-    "음료", "서브", "메인",
+    "그릭요거트", "요거트", "감동란", "계란", "달걀", "구운란", "반숙란", "삶은란",
+    "두부바", "두부", "닭가슴살", "도시락", "샐러드", "아몬드 브리즈", "아몬드",
+    "프로틴", "유청 단백질", "두유", "콜라", "오트밀", "현미", "곤약밥", "참치",
+    "바나나", "삼각김밥", "탄산수", "아메리카노", "음료", "서브", "메인",
 )
 
 
@@ -243,8 +243,11 @@ def analyze_node(state: AgentState) -> dict[str, Any]:
 
     if mode != "item_swap":
         base_conditions.pop("swap_target", None)
-    elif "swap_target" not in refined.get("base_conditions", {}):
-        base_conditions.pop("swap_target", None)
+    else:
+        if "swap_target" not in refined.get("base_conditions", {}):
+            base_conditions.pop("swap_target", None)
+        if base_conditions.get("meals_per_day"):
+            profile["meals_per_day"] = base_conditions["meals_per_day"]
 
     # 명시적 테스트 쿼리 및 커피 요청 플래그는 현재 턴에만 유지
     if "explicit_query" not in refined.get("preferences", {}):
@@ -275,11 +278,33 @@ def analyze_node(state: AgentState) -> dict[str, Any]:
             constraints["budget_krw"] = profile["budget_krw"]
         else:
             constraints.setdefault("budget_krw", profile["budget_krw"])
+    elif (
+        prev_ctx.get("profile", {}).get("budget_krw") is not None
+        and profile.get("budget_krw") is None
+        and "budget_krw" not in refined.get("constraints", {})
+        and constraints.get("budget_krw") == prev_ctx.get("profile", {}).get("budget_krw")
+    ):
+        constraints.pop("budget_krw", None)
+
+    if mode == "cheating_recovery" and not base_conditions.get("excess_kcal") and "target_meal_kcal" not in refined.get("constraints", {}):
+        if m_exc := _EXCESS_KCAL_RE.search(user_msg):
+            base_conditions["excess_kcal"] = float(m_exc.group(1).replace(",", ""))
     if profile.get("disliked_ingredients"):
         merged_dislikes = list(dict.fromkeys([*preferences.get("disliked_ingredients", []), *profile["disliked_ingredients"]]))
         preferences["disliked_ingredients"] = merged_dislikes
 
     previous_combo = prev_ctx.get("last_combo") or state.get("previous_combo") or {}
+    if previous_combo.get("selected_items") and any(k in user_msg for k in ("바꿔", "교체", "대체", "빼고", "스왑")):
+        matched_prev = next(
+            (it["name"] for it in previous_combo["selected_items"] if it["name"].lower() in user_msg.lower()),
+            None,
+        )
+        if matched_prev:
+            mode = "item_swap"
+            mode_switched = False
+            base_conditions["swap_target"] = matched_prev
+            if base_conditions.get("meals_per_day"):
+                profile["meals_per_day"] = base_conditions["meals_per_day"]
 
     # 필수 조건 누락 검증 (F3005: 누락 시 Tool 호출 전 되묻기)
     missing: list[str] = []
@@ -434,6 +459,9 @@ def plan_node(state: AgentState) -> dict[str, Any]:
                 if query_mode == "online_bulk"
                 else {"sodium": ["요거트", "아몬드", "두유"], "budget": ["계란", "두부", "아몬드"], "default": ["요거트", "아몬드", "우유"]}[replan_tag]
             )
+            if replan_count >= 2 and query_mode != "online_bulk":
+                extra_nut = [*extra_nut, "바나나", "삼각김밥", "프로틴"]
+                extra_shop = [*extra_shop, "바나나", "삼각김밥", "프로틴"]
         else:
             extra_nut, extra_shop = [], []
 
